@@ -9,7 +9,15 @@ export const initialReflectionState: ReflectionState = {
 
   selectedElement: "Onboarding screen - Figma Frame",
   productContext: "Fitness tracking app",
+
+  // NEW — per‑section notes
+  goalNotes: "",
+  audienceNotes: "",
+  selectedElementNotes: "",
+  productContextNotes: "",
+
   designerNotes: "This screen appears after account creation.",
+
   designStage: ["high-fidelity"],
   contextSelection: ["selected-ui", "button-labels", "input-fields"],
 

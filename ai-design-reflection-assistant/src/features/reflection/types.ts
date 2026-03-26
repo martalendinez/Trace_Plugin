@@ -67,7 +67,15 @@ export interface ReflectionState {
 
   selectedElement: string;
   productContext: string;
+
+  // NEW — per‑section notes
+  goalNotes: string;
+  audienceNotes: string;
+  selectedElementNotes: string;
+  productContextNotes: string;
+
   designerNotes: string;
+
   designStage: DesignStage[];
   contextSelection: ContextItem[];
 
