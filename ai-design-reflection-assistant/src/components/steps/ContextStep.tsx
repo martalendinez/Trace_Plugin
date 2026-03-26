@@ -1,5 +1,6 @@
 import { useReflection } from "../../features/reflection/state/ReflectionContext";
 import type { ContextItem, DesignStage } from "../../features/reflection/types";
+import Tooltip from "../../components/Tooltip";
 
 const DESIGN_STAGES: { value: DesignStage; label: string }[] = [
   { value: "research", label: "Research" },
@@ -20,19 +21,31 @@ export function ContextStep() {
   const { state, dispatch } = useReflection();
 
   return (
-    <div style={{ display: "grid", gap: 16 }}>
+    <div style={{ display: "grid", gap: 20, maxWidth: 700 }}>
+      
+      {/* HEADER */}
       <div>
         <div style={{ fontSize: 12, color: "#666" }}>Step 2 of 6</div>
-        <h1 style={{ fontSize: 24, margin: "6px 0 0" }}>Context selection</h1>
-        <p style={{ fontSize: 14, color: "#555", lineHeight: 1.5 }}>
-          Help the AI understand the design situation before generating ideas.
+
+        <h1 style={{ fontSize: 26, margin: "6px 0 0" }}>
+          Provide design context
+        </h1>
+
+        <p style={{ fontSize: 14, color: "#555", lineHeight: 1.6 }}>
+          Help the AI understand your design so it can give more relevant and accurate feedback.
         </p>
       </div>
 
-      <label style={{ display: "grid", gap: 8 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>Selected design element</span>
+      {/* SELECTED ELEMENT */}
+      <label style={{ display: "grid", gap: 6 }}>
+        <span style={{ fontSize: 13, fontWeight: 600 }}>
+          What part of the design are you working on?
+          <Tooltip text="Describe the specific screen or component you want feedback on." />
+        </span>
+
         <input
           value={state.selectedElement}
+          placeholder="e.g. Checkout screen, navigation bar, booking form"
           onChange={(e) =>
             dispatch({
               type: "SET_FIELD",
@@ -44,10 +57,16 @@ export function ContextStep() {
         />
       </label>
 
-      <label style={{ display: "grid", gap: 8 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>Product context</span>
+      {/* PRODUCT CONTEXT */}
+      <label style={{ display: "grid", gap: 6 }}>
+        <span style={{ fontSize: 13, fontWeight: 600 }}>
+          What is this product or feature?
+          <Tooltip text="Explain what your product does and the context of this design." />
+        </span>
+
         <input
           value={state.productContext}
+          placeholder="e.g. A mobile app for booking restaurants"
           onChange={(e) =>
             dispatch({
               type: "SET_FIELD",
@@ -59,8 +78,17 @@ export function ContextStep() {
         />
       </label>
 
-      <div style={{ display: "grid", gap: 8 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>Design stage</span>
+      {/* DESIGN STAGE */}
+      <div style={{ display: "grid", gap: 6 }}>
+        <span style={{ fontSize: 13, fontWeight: 600 }}>
+          What stage are you in?
+          <Tooltip text="This helps the AI adapt feedback to your design process." />
+        </span>
+
+        <span style={{ fontSize: 12, color: "#777" }}>
+          Select the stage that best matches your current work.
+        </span>
+
         <div style={{ display: "grid", gap: 10 }}>
           {DESIGN_STAGES.map((stage) => (
             <label key={stage.value} style={checkboxRowStyle}>
@@ -80,8 +108,17 @@ export function ContextStep() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gap: 8 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>Select elements for AI</span>
+      {/* CONTEXT FOR AI */}
+      <div style={{ display: "grid", gap: 6 }}>
+        <span style={{ fontSize: 13, fontWeight: 600 }}>
+          What information should the AI use?
+          <Tooltip text="Select what parts of your design or research should be considered." />
+        </span>
+
+        <span style={{ fontSize: 12, color: "#777" }}>
+          This simulates what the AI has access to (e.g. from Figma or documents).
+        </span>
+
         <div style={{ display: "grid", gap: 10 }}>
           {CONTEXT_OPTIONS.map((item) => (
             <label key={item.value} style={checkboxRowStyle}>
@@ -97,9 +134,10 @@ export function ContextStep() {
               />
               <div style={{ display: "grid", gap: 2 }}>
                 <span>{item.label}</span>
+
                 {item.sensitive && (
                   <span style={{ fontSize: 12, color: "#777" }}>
-                    Sensitive — include only if needed
+                    Sensitive — include only if necessary
                   </span>
                 )}
               </div>
@@ -108,10 +146,16 @@ export function ContextStep() {
         </div>
       </div>
 
-      <label style={{ display: "grid", gap: 8 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>Additional context</span>
+      {/* ADDITIONAL CONTEXT */}
+      <label style={{ display: "grid", gap: 6 }}>
+        <span style={{ fontSize: 13, fontWeight: 600 }}>
+          Anything else the AI should know?
+          <Tooltip text="Add any extra details that might influence the feedback." />
+        </span>
+
         <textarea
           value={state.designerNotes}
+          placeholder="e.g. Users often struggle with this step based on usability tests"
           onChange={(e) =>
             dispatch({
               type: "SET_FIELD",
@@ -123,10 +167,12 @@ export function ContextStep() {
         />
       </label>
 
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
+      {/* ACTIONS */}
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
         <button onClick={() => dispatch({ type: "PREV_STEP" })} style={secondaryButtonStyle}>
           Back
         </button>
+
         <button onClick={() => dispatch({ type: "NEXT_STEP" })} style={primaryButtonStyle}>
           Continue
         </button>
