@@ -22,6 +22,7 @@ export const initialReflectionState: ReflectionState = {
 
   generatedOptions: [],
   selectedOptionId: null,
+
   activeCritiqueCategories: [
     "accessibility",
     "edge-cases",
@@ -30,5 +31,10 @@ export const initialReflectionState: ReflectionState = {
   critiques: [],
 
   ownImprovement: "",
+
+  /** NEW FIELDS REQUIRED BY types.ts **/
+  improvements: [],            // ← must exist
+  refinementChat: [],          // ← must exist
+
   appliedChanges: [],
 };

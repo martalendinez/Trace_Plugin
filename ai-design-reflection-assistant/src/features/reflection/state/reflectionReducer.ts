@@ -1,43 +1,44 @@
-import type { ReflectionState, DesignStage, ContextItem, OptionCard } from "../types";
+import type {
+  ReflectionState,
+  DesignStage,
+  ContextItem,
+  OptionCard,
+  CritiqueCategory,
+  CritiqueItem,
+} from "../types";
 
 export function reflectionReducer(
   state: ReflectionState,
   action: any
 ): ReflectionState {
   switch (action.type) {
-    // Generic field setter
+    // -----------------------------
+    // GENERIC FIELD SETTERS
+    // -----------------------------
     case "SET_FIELD":
-      return {
-        ...state,
-        [action.field]: action.value,
-      };
+      return { ...state, [action.field]: action.value };
 
-    // Direct step change
     case "SET_STEP":
-      return {
-        ...state,
-        currentStep: action.step,
-      };
+      return { ...state, currentStep: action.step };
 
-    // Move forward
     case "NEXT_STEP":
       return {
         ...state,
         currentStep: Math.min(state.currentStep + 1, state.maxSteps - 1),
       };
 
-    // Move backward
     case "PREV_STEP":
       return {
         ...state,
         currentStep: Math.max(state.currentStep - 1, 0),
       };
 
-    // Toggle design stage
+    // -----------------------------
+    // DESIGN STAGE & CONTEXT
+    // -----------------------------
     case "TOGGLE_STAGE": {
       const value: DesignStage = action.value;
       const exists = state.designStage.includes(value);
-
       return {
         ...state,
         designStage: exists
@@ -46,11 +47,9 @@ export function reflectionReducer(
       };
     }
 
-    // Toggle context selection
     case "TOGGLE_CONTEXT": {
       const value: ContextItem = action.value;
       const exists = state.contextSelection.includes(value);
-
       return {
         ...state,
         contextSelection: exists
@@ -59,9 +58,10 @@ export function reflectionReducer(
       };
     }
 
-    // ⭐ Generate new options
+    // -----------------------------
+    // OPTIONS GENERATION
+    // -----------------------------
     case "GENERATE_OPTIONS": {
-      // You can replace this with your real AI generation later
       const mockOptions: OptionCard[] = [
         {
           id: "guided_onboarding",
@@ -102,13 +102,98 @@ export function reflectionReducer(
       };
     }
 
-    // ⭐ Select an option
     case "SELECT_OPTION":
+      return { ...state, selectedOptionId: action.value };
+
+    // -----------------------------
+    // CRITIQUE
+    // -----------------------------
+    case "TOGGLE_CRITIQUE_CATEGORY": {
+      const value: CritiqueCategory = action.value;
+      const exists = state.activeCritiqueCategories.includes(value);
       return {
         ...state,
-        selectedOptionId: action.value,
+        activeCritiqueCategories: exists
+          ? state.activeCritiqueCategories.filter((c) => c !== value)
+          : [...state.activeCritiqueCategories, value],
+      };
+    }
+
+    case "RUN_CRITIQUE": {
+      if (state.activeCritiqueCategories.length === 0) {
+        return { ...state, critiques: [] };
+      }
+
+      const mockCritiques: CritiqueItem[] = state.activeCritiqueCategories.map(
+        (cat) => ({
+          id: crypto.randomUUID(),
+          category: cat,
+          title: `Issue related to ${cat}`,
+          concern: `A potential concern in the area of ${cat}.`,
+          suggestion: `A suggested improvement for ${cat}.`,
+          uncertaintyNote: "This critique may not apply in all contexts.",
+        })
+      );
+
+      return { ...state, critiques: mockCritiques };
+    }
+
+    case "REMOVE_CRITIQUE":
+      return {
+        ...state,
+        critiques: state.critiques.filter((c) => c.id !== action.id),
       };
 
+    // -----------------------------
+    // IMPROVEMENTS (Critique → Apply)
+    // -----------------------------
+    case "ADD_IMPROVEMENT":
+      return {
+        ...state,
+        improvements: [
+          ...state.improvements,
+          { id: crypto.randomUUID(), text: action.text, applied: false },
+        ],
+      };
+
+    case "TOGGLE_IMPROVEMENT_APPLIED":
+      return {
+        ...state,
+        improvements: state.improvements.map((imp) =>
+          imp.id === action.id ? { ...imp, applied: !imp.applied } : imp
+        ),
+      };
+
+    // -----------------------------
+    // REFINEMENT CHAT
+    // -----------------------------
+    case "ADD_REFINEMENT_MESSAGE":
+      return {
+        ...state,
+        refinementChat: [...state.refinementChat, action.message],
+      };
+
+    // -----------------------------
+    // OWN IMPROVEMENT (textarea)
+    // -----------------------------
+    case "ADD_OWN_IMPROVEMENT":
+      if (!state.ownImprovement.trim()) return state;
+      return {
+        ...state,
+        improvements: [
+          ...state.improvements,
+          {
+            id: crypto.randomUUID(),
+            text: state.ownImprovement.trim(),
+            applied: false,
+          },
+        ],
+        ownImprovement: "",
+      };
+
+    // -----------------------------
+    // DEFAULT
+    // -----------------------------
     default:
       return state;
   }

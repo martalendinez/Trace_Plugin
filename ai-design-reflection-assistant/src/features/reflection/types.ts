@@ -58,6 +58,17 @@ export interface TraceEntry {
   value: string;
 }
 
+export interface ImprovementItem {
+  id: string;
+  text: string;
+  applied: boolean;
+}
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
 export interface ReflectionState {
   currentStep: number;
   taskMode: TaskMode;
@@ -80,9 +91,14 @@ export interface ReflectionState {
 
   generatedOptions: OptionCard[];
   selectedOptionId: string | null;
+
   activeCritiqueCategories: CritiqueCategory[];
   critiques: CritiqueItem[];
 
   ownImprovement: string;
+
+  improvements: ImprovementItem[];
+  refinementChat: ChatMessage[];
+
   appliedChanges: string[];
 }

@@ -1,6 +1,131 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronDown, AlertTriangle, Info } from "lucide-react";
+import { cn } from "../../lib/utils";
 import { useReflection } from "../../features/reflection/state/ReflectionContext";
-import type { CritiqueCategory } from "../../features/reflection/types";
+import type { CritiqueItem, CritiqueCategory } from "../../features/reflection/types";
+
+const severityConfig = {
+  warning: {
+    icon: AlertTriangle,
+    bg: "bg-amber-50",
+    border: "border-amber-200/60",
+    tag: "bg-amber-100 text-amber-700",
+    dot: "bg-amber-400",
+  },
+  info: {
+    icon: Info,
+    bg: "bg-primary/[0.03]",
+    border: "border-primary/10",
+    tag: "bg-primary/10 text-primary",
+    dot: "bg-primary",
+  },
+};
+
+function CritiqueCard({
+  critique,
+  onApply,
+  onDiscuss,
+}: {
+  critique: CritiqueItem;
+  onApply: (c: CritiqueItem) => void;
+  onDiscuss: (c: CritiqueItem) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const config =
+    severityConfig[critique.category === "accessibility" ? "warning" : "info"];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -6 }}
+      className={cn(
+        "border rounded-xl overflow-hidden transition-all duration-200",
+        config.border,
+        expanded ? config.bg : "bg-card hover:bg-muted/30"
+      )}
+    >
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-start gap-3 p-3 text-left"
+      >
+        <div className={cn("w-1.5 h-1.5 rounded-full mt-1.5 shrink-0", config.dot)} />
+
+        <div className="flex-1 min-w-0">
+          <span
+            className={cn(
+              "text-[10px] font-medium px-1.5 py-0.5 rounded-full uppercase tracking-wider",
+              config.tag
+            )}
+          >
+            {critique.category}
+          </span>
+
+          <p className="text-sm font-medium text-foreground leading-snug mt-1">
+            {critique.title}
+          </p>
+        </div>
+
+        <ChevronDown
+          className={cn(
+            "w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-200 mt-1",
+            expanded && "rotate-180"
+          )}
+        />
+      </button>
+
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-3 pb-3 pl-[26px] space-y-3">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {critique.concern}
+              </p>
+
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                <span className="font-medium text-foreground">Suggestion: </span>
+                {critique.suggestion}
+              </p>
+
+              <p className="text-[11px] text-muted-foreground leading-relaxed italic">
+                {critique.uncertaintyNote}
+              </p>
+
+              <div className="flex flex-col gap-1.5">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onApply(critique);
+                  }}
+                  className="text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+                >
+                  Apply suggestion →
+                </button>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDiscuss(critique);
+                  }}
+                  className="text-xs font-medium text-primary/70 hover:text-primary transition-colors"
+                >
+                  Discuss with AI →
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
 
 const CATEGORIES: { value: CritiqueCategory; label: string }[] = [
   { value: "accessibility", label: "Accessibility" },
@@ -15,149 +140,108 @@ export function CritiqueStep() {
 
   useEffect(() => {
     dispatch({ type: "RUN_CRITIQUE" });
-  }, [state.activeCritiqueCategories, dispatch]);
+  }, [state.activeCritiqueCategories]);
+
+  const handleApply = (critique: CritiqueItem) => {
+    dispatch({ type: "ADD_IMPROVEMENT", text: critique.suggestion });
+    dispatch({ type: "REMOVE_CRITIQUE", id: critique.id });
+  };
+
+  const handleDiscuss = (critique: CritiqueItem) => {
+    dispatch({
+      type: "SET_FIELD",
+      field: "ownImprovement",
+      value: critique.suggestion,
+    });
+    dispatch({ type: "NEXT_STEP" });
+  };
 
   return (
-    <div style={{ display: "grid", gap: 16 }}>
-      <div>
-        <div style={{ fontSize: 12, color: "#666" }}>Step 4 of 6</div>
-        <h1 style={{ fontSize: 24, margin: "6px 0 0" }}>Critique mode</h1>
-        <p style={{ fontSize: 14, color: "#555", lineHeight: 1.5 }}>
-          Review potential issues critically. Suggestions should support thinking, not replace it.
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.28, ease: "easeOut" }}
+      className="flex-1 overflow-y-auto panel-scroll p-5 space-y-6"
+    >
+      {/* HEADER */}
+      <div className="space-y-1">
+        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-[0.16em]">
+          STEP 4 OF 6
+        </p>
+
+        <h3 className="text-sm font-semibold text-foreground">Critique mode</h3>
+
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Review potential issues critically. Apply suggestions you want to keep.
         </p>
       </div>
 
-      <div style={{ display: "grid", gap: 8 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>Consider before continuing</span>
-        <div style={{ display: "grid", gap: 10 }}>
-          {CATEGORIES.map((category) => (
-            <label key={category.value} style={checkboxRowStyle}>
+      {/* CATEGORY CHECKBOXES */}
+      <div className="space-y-2">
+        <span className="text-xs font-medium text-foreground">Consider before continuing</span>
+
+        <div className="space-y-2">
+          {CATEGORIES.map((cat) => (
+            <label
+              key={cat.value}
+              className="flex items-center gap-2 border border-border rounded-lg px-3 py-2 text-xs cursor-pointer hover:bg-muted/40"
+            >
               <input
                 type="checkbox"
-                checked={state.activeCritiqueCategories.includes(category.value)}
+                checked={state.activeCritiqueCategories.includes(cat.value)}
                 onChange={() =>
-                  dispatch({
-                    type: "TOGGLE_CRITIQUE_CATEGORY",
-                    value: category.value,
-                  })
+                  dispatch({ type: "TOGGLE_CRITIQUE_CATEGORY", value: cat.value })
                 }
               />
-              <span>{category.label}</span>
+              <span>{cat.label}</span>
             </label>
           ))}
         </div>
       </div>
 
-      <div style={{ display: "grid", gap: 12 }}>
+      {/* CRITIQUE LIST */}
+      <AnimatePresence mode="popLayout">
         {state.critiques.length === 0 ? (
-          <div style={emptyBoxStyle}>
-            <p style={{ margin: 0, fontSize: 14, color: "#555" }}>
-              No critique items available. Select at least one critique category.
+          <motion.div
+            key="empty"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="border border-dashed border-border rounded-lg p-4 bg-muted/20 text-center"
+          >
+            <p className="text-xs text-muted-foreground">
+              No critique items available. Select categories or continue.
             </p>
-          </div>
+          </motion.div>
         ) : (
-          state.critiques.map((critique) => (
-            <div key={critique.id} style={cardStyle}>
-              <div style={{ fontWeight: 700, fontSize: 16 }}>{critique.title}</div>
-              <div style={{ fontSize: 14, color: "#444", lineHeight: 1.5 }}>
-                {critique.concern}
-              </div>
-              <div style={{ fontSize: 14, color: "#222" }}>
-                <strong>Suggested improvement:</strong> {critique.suggestion}
-              </div>
-              <div style={{ fontSize: 12, color: "#777" }}>
-                <strong>Uncertainty:</strong> {critique.uncertaintyNote}
-              </div>
-            </div>
-          ))
+          <div className="space-y-2.5">
+            {state.critiques.map((critique) => (
+              <CritiqueCard
+                key={critique.id}
+                critique={critique}
+                onApply={handleApply}
+                onDiscuss={handleDiscuss}
+              />
+            ))}
+          </div>
         )}
-      </div>
+      </AnimatePresence>
 
-      <label style={{ display: "grid", gap: 8 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>Write your own improvement</span>
-        <textarea
-          value={state.ownImprovement}
-          onChange={(e) =>
-            dispatch({
-              type: "SET_FIELD",
-              field: "ownImprovement",
-              value: e.target.value,
-            })
-          }
-          placeholder="Add your own response to the critique..."
-          style={textareaStyle}
-        />
-      </label>
-
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
-        <button onClick={() => dispatch({ type: "PREV_STEP" })} style={secondaryButtonStyle}>
+      {/* ACTIONS */}
+      <div className="flex gap-2 pt-2">
+        <button
+          onClick={() => dispatch({ type: "PREV_STEP" })}
+          className="flex-1 py-2.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-muted/50 transition-all"
+        >
           Back
         </button>
 
-        <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={() => dispatch({ type: "ADD_OWN_IMPROVEMENT" })} style={secondaryButtonStyle}>
-            Apply improvement
-          </button>
-          <button onClick={() => dispatch({ type: "NEXT_STEP" })} style={primaryButtonStyle}>
-            Continue
-          </button>
-        </div>
+        <button
+          onClick={() => dispatch({ type: "NEXT_STEP" })}
+          className="flex-1 py-2.5 rounded-lg text-xs font-medium bg-primary text-primary-foreground shadow-sm shadow-primary/20 hover:shadow-md hover:shadow-primary/25 transition-all"
+        >
+          Continue
+        </button>
       </div>
-    </div>
+    </motion.div>
   );
 }
-
-const checkboxRowStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: 10,
-  border: "1px solid #e3e3e3",
-  borderRadius: 10,
-  padding: "10px 12px",
-};
-
-const cardStyle: React.CSSProperties = {
-  border: "1px solid #dddddd",
-  borderRadius: 12,
-  padding: 14,
-  display: "grid",
-  gap: 8,
-  background: "#fafafa",
-};
-
-const emptyBoxStyle: React.CSSProperties = {
-  border: "1px dashed #cfcfcf",
-  borderRadius: 12,
-  padding: 16,
-  background: "#fafafa",
-};
-
-const textareaStyle: React.CSSProperties = {
-  minHeight: 88,
-  borderRadius: 10,
-  border: "1px solid #d7d7d7",
-  padding: "12px",
-  resize: "vertical",
-};
-
-const primaryButtonStyle: React.CSSProperties = {
-  height: 42,
-  padding: "0 16px",
-  borderRadius: 10,
-  border: "none",
-  background: "#111",
-  color: "#fff",
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
-const secondaryButtonStyle: React.CSSProperties = {
-  height: 42,
-  padding: "0 16px",
-  borderRadius: 10,
-  border: "1px solid #d7d7d7",
-  background: "#fff",
-  color: "#111",
-  fontWeight: 600,
-  cursor: "pointer",
-};

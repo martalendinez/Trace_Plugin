@@ -1,141 +1,195 @@
-import { useMemo } from "react";
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { Check, Plus, Sparkles, ArrowUp } from "lucide-react";
+import { cn } from "../../lib/utils";
 import { useReflection } from "../../features/reflection/state/ReflectionContext";
 
 export function ApplyStep() {
   const { state, dispatch } = useReflection();
 
-  const selectedOption = useMemo(
-    () => state.generatedOptions.find((option) => option.id === state.selectedOptionId) ?? null,
-    [state.generatedOptions, state.selectedOptionId]
-  );
+  const [customText, setCustomText] = useState("");
+  const [chatInput, setChatInput] = useState("");
+
+  const improvements = state.improvements;
+  const chatMessages = state.refinementChat;
+
+  const addCustom = () => {
+    if (!customText.trim()) return;
+    dispatch({ type: "ADD_IMPROVEMENT", text: customText.trim() });
+    setCustomText("");
+  };
+
+  const toggleApply = (id: string) => {
+    dispatch({ type: "TOGGLE_IMPROVEMENT_APPLIED", id });
+  };
+
+  const handleChatSend = () => {
+    if (!chatInput.trim()) return;
+
+    dispatch({
+      type: "ADD_REFINEMENT_MESSAGE",
+      message: { role: "user", content: chatInput.trim() },
+    });
+
+    dispatch({
+      type: "ADD_REFINEMENT_MESSAGE",
+      message: {
+        role: "assistant",
+        content:
+          "Good suggestion. I've refined the improvement to be more specific — you can apply it directly to the canvas.",
+      },
+    });
+
+    setChatInput("");
+  };
 
   return (
-    <div style={{ display: "grid", gap: 16 }}>
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.28, ease: "easeOut" }}
+      className="flex-1 overflow-y-auto panel-scroll p-5 space-y-6"
+    >
+      {/* HEADER */}
       <div>
-        <div style={{ fontSize: 12, color: "#666" }}>Step 5 of 6</div>
-        <h1 style={{ fontSize: 24, margin: "6px 0 0" }}>Apply changes</h1>
-        <p style={{ fontSize: 14, color: "#555", lineHeight: 1.5 }}>
-          Review proposed changes before applying them. The designer remains in control.
+        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-[0.16em]">
+          STEP 5 OF 6
+        </p>
+        <h3 className="text-sm font-semibold text-foreground">Improvements</h3>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Apply or refine suggested changes.
         </p>
       </div>
 
-      <div style={{ display: "grid", gap: 10 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>Selected option</span>
-        <div style={readonlyBoxStyle}>
-          {selectedOption ? selectedOption.title : "No option selected"}
+      {/* IMPROVEMENT LIST */}
+      <div className="space-y-2">
+        {improvements.map((imp) => (
+          <motion.div
+            key={imp.id}
+            layout
+            className={cn(
+              "flex items-start gap-2.5 p-3 rounded-xl border transition-all duration-200",
+              imp.applied
+                ? "bg-primary/5 border-primary/15"
+                : "bg-card border-border hover:border-border/80"
+            )}
+          >
+            <button
+              onClick={() => toggleApply(imp.id)}
+              className={cn(
+                "w-5 h-5 rounded-md border flex items-center justify-center shrink-0 mt-0.5 transition-all duration-200",
+                imp.applied
+                  ? "bg-primary border-primary text-primary-foreground"
+                  : "border-border hover:border-muted-foreground/50"
+              )}
+            >
+              {imp.applied && <Check className="w-3 h-3" />}
+            </button>
+
+            <p
+              className={cn(
+                "text-xs leading-relaxed flex-1",
+                imp.applied ? "text-foreground" : "text-muted-foreground"
+              )}
+            >
+              {imp.text}
+            </p>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* ADD CUSTOM */}
+      <div className="flex items-center gap-2">
+        <input
+          value={customText}
+          onChange={(e) => setCustomText(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && addCustom()}
+          placeholder="Write your own improvement..."
+          className="flex-1 bg-muted rounded-lg px-3 py-2 text-xs outline-none placeholder:text-muted-foreground/50"
+        />
+        <button
+          onClick={addCustom}
+          disabled={!customText.trim()}
+          className={cn(
+            "w-8 h-8 rounded-lg flex items-center justify-center transition-all shrink-0",
+            customText.trim()
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground"
+          )}
+        >
+          <Plus className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {/* REFINEMENT CHAT */}
+      <div className="border border-border rounded-xl overflow-hidden">
+        <div className="px-3 py-2 border-b border-border flex items-center gap-1.5">
+          <Sparkles className="w-3 h-3 text-primary" />
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+            Refinement Chat
+          </span>
+        </div>
+
+        <div className="max-h-[160px] overflow-y-auto panel-scroll p-3 space-y-2">
+          {chatMessages.map((msg, i) => (
+            <div
+              key={i}
+              className={cn(
+                "text-xs leading-relaxed px-3 py-2 rounded-lg max-w-[90%]",
+                msg.role === "user"
+                  ? "bg-primary text-primary-foreground ml-auto"
+                  : "bg-muted text-foreground"
+              )}
+            >
+              {msg.content}
+            </div>
+          ))}
+        </div>
+
+        <div className="p-2 border-t border-border">
+          <div className="flex items-center gap-1.5 bg-muted rounded-lg px-2.5 py-1.5">
+            <input
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleChatSend();
+                }
+              }}
+              placeholder="Refine an improvement..."
+              className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/60"
+            />
+            <button
+              onClick={handleChatSend}
+              disabled={!chatInput.trim()}
+              className={cn(
+                "w-5 h-5 rounded flex items-center justify-center transition-all",
+                chatInput.trim()
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-border text-muted-foreground"
+              )}
+            >
+              <ArrowUp className="w-3 h-3" />
+            </button>
+          </div>
         </div>
       </div>
 
-      <div style={{ display: "grid", gap: 10 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>Suggested changes</span>
-
-        {!selectedOption ? (
-          <div style={emptyBoxStyle}>No selected option available.</div>
-        ) : (
-          <div style={{ display: "grid", gap: 12 }}>
-            {selectedOption.suggestedChanges.map((change) => (
-              <div key={change} style={cardStyle}>
-                <div style={{ fontSize: 14, color: "#333", lineHeight: 1.5 }}>{change}</div>
-                <div>
-                  <button
-                    onClick={() =>
-                      dispatch({
-                        type: "APPLY_CHANGE",
-                        value: change,
-                      })
-                    }
-                    style={secondaryButtonStyle}
-                  >
-                    Apply change
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* APPLY BUTTON */}
+      <button
+        disabled={!improvements.some((i) => i.applied)}
+        onClick={() => dispatch({ type: "NEXT_STEP" })}
+        className={cn(
+          "w-full py-2.5 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2",
+          improvements.some((i) => i.applied)
+            ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20 hover:shadow-md"
+            : "bg-muted text-muted-foreground cursor-not-allowed"
         )}
-      </div>
-
-      <div style={{ display: "grid", gap: 10 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>Changes ready to apply</span>
-
-        {state.appliedChanges.length === 0 ? (
-          <div style={emptyBoxStyle}>No applied changes yet.</div>
-        ) : (
-          <div style={{ display: "grid", gap: 10 }}>
-            {state.appliedChanges.map((change, index) => (
-              <div key={`${change}-${index}`} style={appliedRowStyle}>
-                <span style={{ fontSize: 14 }}>{change}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
-        <button onClick={() => dispatch({ type: "PREV_STEP" })} style={secondaryButtonStyle}>
-          Back
-        </button>
-        <button onClick={() => dispatch({ type: "NEXT_STEP" })} style={primaryButtonStyle}>
-          Continue
-        </button>
-      </div>
-    </div>
+      >
+        <Sparkles className="w-3.5 h-3.5" />
+        Apply to Canvas
+      </button>
+    </motion.div>
   );
 }
-
-const readonlyBoxStyle: React.CSSProperties = {
-  minHeight: 42,
-  display: "flex",
-  alignItems: "center",
-  borderRadius: 10,
-  border: "1px solid #d7d7d7",
-  padding: "0 12px",
-  background: "#fafafa",
-};
-
-const emptyBoxStyle: React.CSSProperties = {
-  border: "1px dashed #cfcfcf",
-  borderRadius: 12,
-  padding: 16,
-  background: "#fafafa",
-  color: "#555",
-  fontSize: 14,
-};
-
-const cardStyle: React.CSSProperties = {
-  border: "1px solid #dddddd",
-  borderRadius: 12,
-  padding: 14,
-  display: "grid",
-  gap: 10,
-  background: "#fff",
-};
-
-const appliedRowStyle: React.CSSProperties = {
-  border: "1px solid #e3e3e3",
-  borderRadius: 10,
-  padding: "12px",
-  background: "#fafafa",
-};
-
-const primaryButtonStyle: React.CSSProperties = {
-  height: 42,
-  padding: "0 16px",
-  borderRadius: 10,
-  border: "none",
-  background: "#111",
-  color: "#fff",
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
-const secondaryButtonStyle: React.CSSProperties = {
-  height: 42,
-  padding: "0 16px",
-  borderRadius: 10,
-  border: "1px solid #d7d7d7",
-  background: "#fff",
-  color: "#111",
-  fontWeight: 600,
-  cursor: "pointer",
-};
