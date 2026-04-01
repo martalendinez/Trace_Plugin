@@ -1,5 +1,23 @@
-import { useReflection } from "../../features/reflection/state/ReflectionContext";
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { ChevronDown, Check } from "lucide-react";
+import { cn } from "../../lib/utils";
 import Tooltip from "../../components/Tooltip";
+import { useReflection } from "../../features/reflection/state/ReflectionContext";
+import type { ReflectionState } from "../../features/reflection/types";
+
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "../../components/ui/dropdown-menu";
+
+interface FieldProps {
+  label: string;
+  helper: string;
+  children: React.ReactNode;
+}
 
 const TASK_MODES = [
   { value: "generate-ideas", label: "Generate ideas" },
@@ -9,138 +27,135 @@ const TASK_MODES = [
   { value: "plan-interaction", label: "Plan interaction" },
 ] as const;
 
+const Field = ({ label, helper, children }: FieldProps) => (
+  <div className="space-y-1.5">
+    <label className="text-xs font-medium text-foreground flex items-center gap-1">
+      {label}
+      <Tooltip text={helper} />
+    </label>
+    {children}
+    <p className="text-[11px] text-muted-foreground">{helper}</p>
+  </div>
+);
+
 export function IntentStep() {
   const { state, dispatch } = useReflection();
 
+  const selected = TASK_MODES.find((t) => t.value === state.taskMode);
+
+  const update = <K extends keyof ReflectionState>(
+    field: K,
+    value: ReflectionState[K]
+  ) => {
+    dispatch({ type: "SET_FIELD", field, value });
+  };
+
+  const canContinue =
+    Boolean(state.taskMode) &&
+    Boolean(state.goal) &&
+    Boolean(state.audience);
+
   return (
-    <div style={{ display: "grid", gap: 20, maxWidth: 700 }}>
-      
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className="flex-1 overflow-y-auto panel-scroll p-5 space-y-6"
+    >
       {/* HEADER */}
-      <div>
-        <div style={{ fontSize: 12, color: "#666" }}>Step 1 of 6</div>
+      <div className="space-y-1">
+        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+          Step 1 of 6
+        </p>
 
-        <h1 style={{ fontSize: 26, margin: "6px 0 0" }}>
+        <h3 className="text-sm font-semibold text-foreground">
           Explain your design intent
-        </h1>
+        </h3>
 
-        <p style={{ fontSize: 14, color: "#555", lineHeight: 1.6 }}>
+        <p className="text-xs text-muted-foreground leading-relaxed">
           Describe what you're trying to achieve so the AI can give more relevant and useful feedback.
         </p>
       </div>
 
       {/* TASK TYPE */}
-      <label style={{ display: "grid", gap: 6 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>
-          Task type
-          <Tooltip text="What kind of help you want from the AI." />
-        </span>
+      <Field
+        label="Task type"
+        helper="Select the type of support you need."
+      >
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className={cn(
+                "w-full flex items-center justify-between px-3 py-2.5 rounded-lg border text-sm bg-card transition-all",
+                "border-border hover:border-border/80"
+              )}
+            >
+              <span className={selected ? "text-foreground" : "text-muted-foreground"}>
+                {selected ? selected.label : "Select task type..."}
+              </span>
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            </button>
+          </DropdownMenuTrigger>
 
-        <span style={{ fontSize: 12, color: "#777" }}>
-          Select the type of support you need.
-        </span>
-
-        <select
-          value={state.taskMode}
-          onChange={(e) =>
-            dispatch({
-              type: "SET_FIELD",
-              field: "taskMode",
-              value: e.target.value,
-            })
-          }
-          style={{
-            height: 42,
-            borderRadius: 10,
-            border: "1px solid #d7d7d7",
-            padding: "0 12px",
-          }}
-        >
-          {TASK_MODES.map((mode) => (
-            <option key={mode.value} value={mode.value}>
-              {mode.label}
-            </option>
-          ))}
-        </select>
-      </label>
+          <DropdownMenuContent className="w-full">
+            {TASK_MODES.map((t) => (
+              <DropdownMenuItem
+                key={t.value}
+                onClick={() => update("taskMode", t.value)}
+                className={cn(
+                  "flex items-center justify-between px-3 py-2.5 text-sm",
+                  state.taskMode === t.value && "bg-primary/5 text-primary"
+                )}
+              >
+                <span>{t.label}</span>
+                {state.taskMode === t.value && (
+                  <Check className="w-3.5 h-3.5" />
+                )}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </Field>
 
       {/* GOAL */}
-      <label style={{ display: "grid", gap: 6 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>
-          What is your goal?
-          <Tooltip text="Describe what you want this design to achieve." />
-        </span>
-
-        <span style={{ fontSize: 12, color: "#777" }}>
-          What should users be able to do or achieve?
-        </span>
-
+      <Field
+        label="What is your goal?"
+        helper="What should users be able to do or achieve?"
+      >
         <input
           value={state.goal}
-          placeholder="e.g. Help users quickly book a table with minimal friction"
-          onChange={(e) =>
-            dispatch({
-              type: "SET_FIELD",
-              field: "goal",
-              value: e.target.value,
-            })
-          }
-          style={{
-            height: 42,
-            borderRadius: 10,
-            border: "1px solid #d7d7d7",
-            padding: "0 12px",
-          }}
+          onChange={(e) => update("goal", e.target.value)}
+          placeholder="e.g. Improve onboarding flow"
+          className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-sm outline-none placeholder:text-muted-foreground/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all"
         />
-      </label>
+      </Field>
 
       {/* AUDIENCE */}
-      <label style={{ display: "grid", gap: 6 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>
-          Who is this for?
-          <Tooltip text="Define your target users so feedback is more relevant." />
-        </span>
-
-        <span style={{ fontSize: 12, color: "#777" }}>
-          Who are you designing for?
-        </span>
-
+      <Field
+        label="Who is this for?"
+        helper="Who are you designing for?"
+      >
         <input
           value={state.audience}
-          placeholder="e.g. Young professionals booking restaurants on mobile"
-          onChange={(e) =>
-            dispatch({
-              type: "SET_FIELD",
-              field: "audience",
-              value: e.target.value,
-            })
-          }
-          style={{
-            height: 42,
-            borderRadius: 10,
-            border: "1px solid #d7d7d7",
-            padding: "0 12px",
-          }}
+          onChange={(e) => update("audience", e.target.value)}
+          placeholder="e.g. First-time users"
+          className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-sm outline-none placeholder:text-muted-foreground/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all"
         />
-      </label>
+      </Field>
 
-      {/* ACTION */}
-      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
-        <button
-          onClick={() => dispatch({ type: "NEXT_STEP" })}
-          style={{
-            height: 42,
-            padding: "0 18px",
-            borderRadius: 10,
-            border: "none",
-            background: "#111",
-            color: "#fff",
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
-        >
-          Continue
-        </button>
-      </div>
-    </div>
+      {/* CONTINUE BUTTON */}
+      <button
+        disabled={!canContinue}
+        onClick={() => dispatch({ type: "NEXT_STEP" })}
+        className={cn(
+          "w-full py-2.5 rounded-lg text-sm font-medium transition-all",
+          canContinue
+            ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20 hover:shadow-md hover:shadow-primary/25"
+            : "bg-muted text-muted-foreground cursor-not-allowed"
+        )}
+      >
+        Continue
+      </button>
+    </motion.div>
   );
 }
