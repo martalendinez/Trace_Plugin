@@ -12,7 +12,7 @@ export function PluginShell({ children }: PluginShellProps) {
   const [panelOpen, setPanelOpen] = useState(true);
 
   return (
-    <div className="h-screen flex bg-background overflow-hidden">
+    <div className="h-screen flex bg-background overflow-hidden overflow-x-hidden">
 
       {/* Canvas */}
       <div className="flex-1 flex items-center justify-center text-muted-foreground">
