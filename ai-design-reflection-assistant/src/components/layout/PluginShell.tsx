@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { Sparkles, PanelRight, X } from "lucide-react";
 import { cn } from "../../lib/utils";
+import StepNavigator from "./StepNavigator";
 
 interface PluginShellProps {
   children: ReactNode;
@@ -28,10 +29,9 @@ export function PluginShell({ children }: PluginShellProps) {
         {/* Panel Header */}
         <div className="h-12 border-b border-border bg-card flex items-center justify-between px-4 shrink-0">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full border border-primary flex items-center justify-center">
-  <Sparkles className="w-3 h-3 text-primary" />
-</div>
-
+            <div className="w-5 h-5 rounded-full border border-primary/40 bg-primary/15 flex items-center justify-center">
+              <Sparkles className="w-2.5 h-2.5 text-primary stroke-[1.5]" />
+            </div>
 
             <div className="flex flex-col leading-tight">
               <span className="text-xs font-semibold text-foreground tracking-tight">
@@ -53,13 +53,16 @@ export function PluginShell({ children }: PluginShellProps) {
           )}
         </div>
 
+        {/* Step Navigation */}
+        <StepNavigator />
+
         {/* Step Content */}
         <div className="flex-1 overflow-hidden">
           {children}
         </div>
       </div>
 
-      {/* Floating open button (only when panel is closed) */}
+      {/* Floating open button */}
       {!panelOpen && (
         <button
           onClick={() => setPanelOpen(true)}

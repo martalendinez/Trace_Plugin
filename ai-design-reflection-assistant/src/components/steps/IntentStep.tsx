@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
 import { ChevronDown, Check } from "lucide-react";
 import { cn } from "../../lib/utils";
@@ -33,7 +32,9 @@ const Field = ({ label, helper, children }: FieldProps) => (
       {label}
       <Tooltip text={helper} />
     </label>
+
     {children}
+
     <p className="text-[11px] text-muted-foreground">{helper}</p>
   </div>
 );
@@ -59,7 +60,7 @@ export function IntentStep() {
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
+      transition={{ duration: 0.28, ease: "easeOut" }}
       className="flex-1 overflow-y-auto panel-scroll p-5 space-y-6"
     >
       {/* HEADER */}
@@ -76,7 +77,6 @@ export function IntentStep() {
           Describe what you're trying to achieve so the AI can give more relevant and useful feedback.
         </p>
       </div>
-      
 
       {/* TASK TYPE */}
       <Field
