@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { ChevronDown, Check } from "lucide-react";
 import { cn } from "../../lib/utils";
-import Tooltip from "../../components/Tooltip";
 import { useReflection } from "../../features/reflection/state/ReflectionContext";
 import type { ReflectionState } from "../../features/reflection/types";
 
@@ -28,9 +27,8 @@ const TASK_MODES = [
 
 const Field = ({ label, helper, children }: FieldProps) => (
   <div className="space-y-1.5">
-    <label className="text-xs font-medium text-foreground flex items-center gap-1">
+    <label className="text-xs font-medium text-foreground">
       {label}
-      <Tooltip text={helper} />
     </label>
 
     {children}
