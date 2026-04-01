@@ -1,395 +1,232 @@
-import { useMemo, useState } from "react";
+import { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Eye,
+  EyeOff,
+  Pencil,
+  Check,
+  Target,
+  MessageSquare,
+  Lightbulb,
+} from "lucide-react";
+import { cn } from "../../lib/utils";
 import { useReflection } from "../../features/reflection/state/ReflectionContext";
 
 export function TraceStep() {
   const { state, dispatch } = useReflection();
 
-  const selectedOption = useMemo(
-    () =>
-      state.generatedOptions.find(
-        (option) => option.id === state.selectedOptionId
-      ) ?? null,
-    [state.generatedOptions, state.selectedOptionId]
+  const [visible, setVisible] = useState(true);
+  const [editing, setEditing] = useState<number | null>(null);
+  const [editValue, setEditValue] = useState("");
+
+  // Build entries dynamically from your real state
+  const appliedImprovements = state.improvements.filter((i) => i.applied);
+
+  const entries = useMemo(
+    () => [
+      {
+        id: 1,
+        step: "Intent",
+        icon: Target,
+        color: "bg-primary/10 text-primary",
+        content: state.goal || "No intent provided.",
+        editable: true,
+        onSave: (val: string) =>
+          dispatch({ type: "SET_FIELD", field: "goal", value: val }),
+      },
+      {
+        id: 2,
+        step: "Critique",
+        icon: MessageSquare,
+        color: "bg-amber-50 text-amber-600",
+        content:
+          state.critiques.length === 0
+            ? "No critique items were reviewed."
+            : `${state.critiques.length} issue(s) reviewed.`,
+        editable: false,
+      },
+      {
+        id: 3,
+        step: "Improvements",
+        icon: Lightbulb,
+        color: "bg-emerald-50 text-emerald-600",
+        content:
+          appliedImprovements.length === 0
+            ? "No improvements were applied."
+            : `Applied ${appliedImprovements.length} improvement(s).`,
+        editable: true,
+        onSave: (val: string) =>
+          dispatch({
+            type: "SET_FIELD",
+            field: "designerNotes",
+            value: val,
+          }),
+      },
+    ],
+    [state, appliedImprovements]
   );
 
+  const startEdit = (entry: any) => {
+    setEditing(entry.id);
+    setEditValue(entry.content);
+  };
+
+  const saveEdit = (entry: any) => {
+    entry.onSave?.(editValue);
+    setEditing(null);
+  };
+
   return (
-    <div style={{ display: "grid", gap: 20, paddingBottom: 40 }}>
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className="flex-1 overflow-y-auto panel-scroll p-4 space-y-4"
+    >
       {/* HEADER */}
-      <div>
-        <div style={{ fontSize: 12, color: "#777" }}>Step 6 of 6</div>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Trace Log</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Full reflection trail
+          </p>
+        </div>
 
-        <h1 style={{ fontSize: 22, margin: "6px 0 0" }}>Reflection log</h1>
-
-        <p style={{ fontSize: 14, color: "#555", lineHeight: 1.5 }}>
-          Review and refine your decisions. Everything here is editable — click
-          any field to update it.
-        </p>
+        <button
+          onClick={() => setVisible(!visible)}
+          className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-muted"
+        >
+          {visible ? (
+            <EyeOff className="w-3.5 h-3.5" />
+          ) : (
+            <Eye className="w-3.5 h-3.5" />
+          )}
+          {visible ? "Hide" : "Show"}
+        </button>
       </div>
 
-      {/* EDITABLE CORE FIELDS */}
-      <div style={{ display: "grid", gap: 14 }}>
-        <EditableTraceCard
-          label="Intent (goal)"
-          value={state.goal}
-          notes={state.goalNotes}
-          onSave={(val) =>
-            dispatch({ type: "SET_FIELD", field: "goal", value: val })
-          }
-          onSaveNotes={(val) =>
-            dispatch({ type: "SET_FIELD", field: "goalNotes", value: val })
-          }
-        />
+      {/* TIMELINE */}
+      <AnimatePresence>
+        {visible && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="space-y-0"
+          >
+            {entries.map((entry, idx) => {
+              const Icon = entry.icon;
+              const isEditing = editing === entry.id;
 
-        <EditableTraceCard
-          label="Audience"
-          value={state.audience}
-          notes={state.audienceNotes}
-          onSave={(val) =>
-            dispatch({ type: "SET_FIELD", field: "audience", value: val })
-          }
-          onSaveNotes={(val) =>
-            dispatch({ type: "SET_FIELD", field: "audienceNotes", value: val })
-          }
-        />
+              return (
+                <div key={entry.id} className="relative flex gap-3">
+                  {/* Timeline left column */}
+                  <div className="flex flex-col items-center">
+                    <div
+                      className={cn(
+                        "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
+                        entry.color
+                      )}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                    </div>
 
-        <EditableTraceCard
-          label="Selected element"
-          value={state.selectedElement}
-          notes={state.selectedElementNotes}
-          onSave={(val) =>
-            dispatch({
-              type: "SET_FIELD",
-              field: "selectedElement",
-              value: val,
-            })
-          }
-          onSaveNotes={(val) =>
-            dispatch({
-              type: "SET_FIELD",
-              field: "selectedElementNotes",
-              value: val,
-            })
-          }
-        />
+                    {idx < entries.length - 1 && (
+                      <div className="w-px flex-1 bg-border my-1" />
+                    )}
+                  </div>
 
-        <EditableTraceCard
-          label="Product context"
-          value={state.productContext}
-          notes={state.productContextNotes}
-          onSave={(val) =>
-            dispatch({
-              type: "SET_FIELD",
-              field: "productContext",
-              value: val,
-            })
-          }
-          onSaveNotes={(val) =>
-            dispatch({
-              type: "SET_FIELD",
-              field: "productContextNotes",
-              value: val,
-            })
-          }
-        />
-      </div>
+                  {/* Content */}
+                  <div className="pb-5 flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-semibold text-foreground">
+                        {entry.step}
+                      </span>
 
-      {/* READ-ONLY INFO */}
-      <div style={{ display: "grid", gap: 12 }}>
-        <TraceCard
-          label="Context shared with AI"
-          value={
-            state.contextSelection.length > 0
-              ? state.contextSelection.join(", ")
-              : "None"
-          }
-        />
+                      {entry.editable && !isEditing && (
+                        <button
+                          onClick={() => startEdit(entry)}
+                          className="text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </button>
+                      )}
 
-        <TraceCard
-          label="Design stage"
-          value={
-            state.designStage.length > 0
-              ? state.designStage.join(", ")
-              : "None"
-          }
-        />
+                      {isEditing && (
+                        <button
+                          onClick={() => saveEdit(entry)}
+                          className="text-primary hover:text-primary/80 transition-colors"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
 
-        <TraceCard
-          label="Options generated"
-          value={`${state.generatedOptions.length} option(s)`}
-        />
-
-        <TraceCard
-          label="Selected option"
-          value={selectedOption ? selectedOption.title : "None"}
-        />
-
-        <TraceCard
-          label="Critiques reviewed"
-          value={`${state.critiques.length} critique item(s)`}
-        />
-      </div>
-
-      {/* CHANGES */}
-      <div style={{ display: "grid", gap: 10 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>Changes applied</span>
-
-        {state.appliedChanges.length === 0 ? (
-          <div style={emptyBoxStyle}>No changes were recorded.</div>
-        ) : (
-          <div style={{ display: "grid", gap: 10 }}>
-            {state.appliedChanges.map((change, index) => (
-              <div key={`${change}-${index}`} style={changeRowStyle}>
-                • {change}
-              </div>
-            ))}
-          </div>
+                    {isEditing ? (
+                      <textarea
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        rows={3}
+                        className="w-full bg-muted rounded-lg px-3 py-2 text-xs outline-none resize-none focus:ring-2 focus:ring-primary/10"
+                        autoFocus
+                      />
+                    ) : (
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {entry.content}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
 
-      {/* DESIGNER NOTES */}
-      <div style={{ display: "grid", gap: 10 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>General notes</span>
-
-        <EditableTextarea
-          value={state.designerNotes}
-          onSave={(val) =>
-            dispatch({
-              type: "SET_FIELD",
-              field: "designerNotes",
-              value: val,
-            })
-          }
+      {/* SUMMARY STATS */}
+      <div className="grid grid-cols-3 gap-2">
+        <SummaryStat label="Intent" value={state.goal ? "Defined" : "None"} />
+        <SummaryStat
+          label="Issues"
+          value={`${state.critiques.length} found`}
+        />
+        <SummaryStat
+          label="Applied"
+          value={`${appliedImprovements.length} applied`}
         />
       </div>
 
       {/* ACTIONS */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginTop: 12,
-        }}
-      >
+      <div className="flex justify-between pt-2">
         <button
           onClick={() => dispatch({ type: "PREV_STEP" })}
-          style={secondaryButtonStyle}
+          className="h-10 px-4 rounded-lg border border-border bg-card text-xs font-medium hover:bg-muted/50 transition-all"
         >
           Back
         </button>
 
         <button
-          onClick={() => alert("Prototype complete ✨")}
-          style={primaryButtonStyle}
+          onClick={() => alert("Reflection complete ✨")}
+          className="h-10 px-4 rounded-lg bg-primary text-primary-foreground text-xs font-medium shadow-sm shadow-primary/20 hover:shadow-md transition-all"
         >
           Finish
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
 //
-// ✨ EDITABLE TRACE CARD (inline editing + notes)
+// ⭐ SUMMARY STAT CARD
 //
 
-function EditableTraceCard({
-  label,
-  value,
-  notes,
-  onSave,
-  onSaveNotes,
-}: {
-  label: string;
-  value: string;
-  notes?: string;
-  onSave: (val: string) => void;
-  onSaveNotes: (val: string) => void;
-}) {
-  const [editingValue, setEditingValue] = useState(false);
-  const [editingNotes, setEditingNotes] = useState(false);
-
-  const [tempValue, setTempValue] = useState(value);
-  const [tempNotes, setTempNotes] = useState(notes || "");
-
+function SummaryStat({ label, value }: { label: string; value: string }) {
   return (
-    <div style={traceCardStyle}>
-      <div style={{ fontSize: 12, color: "#666", marginBottom: 6 }}>
+    <div className="bg-muted/60 rounded-lg p-2.5 text-center">
+      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
         {label}
-      </div>
-
-      {/* VALUE */}
-      {editingValue ? (
-        <input
-          value={tempValue}
-          onChange={(e) => setTempValue(e.target.value)}
-          onBlur={() => {
-            onSave(tempValue);
-            setEditingValue(false);
-          }}
-          autoFocus
-          style={inputStyle}
-        />
-      ) : (
-        <div
-          onClick={() => setEditingValue(true)}
-          style={{ fontSize: 14, color: "#111", cursor: "text" }}
-        >
-          {value || "Click to edit"}
-        </div>
-      )}
-
-      {/* NOTES */}
-      <div style={{ marginTop: 8 }}>
-        {editingNotes ? (
-          <textarea
-            value={tempNotes}
-            onChange={(e) => setTempNotes(e.target.value)}
-            onBlur={() => {
-              onSaveNotes(tempNotes);
-              setEditingNotes(false);
-            }}
-            autoFocus
-            style={textareaStyle}
-          />
-        ) : (
-          <div
-            onClick={() => setEditingNotes(true)}
-            style={{ fontSize: 12, color: "#777", cursor: "text" }}
-          >
-            {notes || "Add notes..."}
-          </div>
-        )}
-      </div>
+      </p>
+      <p className="text-xs font-semibold text-foreground mt-0.5">{value}</p>
     </div>
   );
 }
-
-//
-// ✨ READ-ONLY CARD
-//
-
-function TraceCard({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div style={traceCardStyle}>
-      <div style={{ fontSize: 12, color: "#666" }}>{label}</div>
-      <div style={{ fontSize: 14, color: "#111", marginTop: 6 }}>{value}</div>
-    </div>
-  );
-}
-
-//
-// ✨ EDITABLE TEXTAREA (general notes)
-//
-
-function EditableTextarea({
-  value,
-  onSave,
-}: {
-  value: string;
-  onSave: (val: string) => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [temp, setTemp] = useState(value);
-
-  return (
-    <div style={notesBoxStyle}>
-      {editing ? (
-        <textarea
-          value={temp}
-          onChange={(e) => setTemp(e.target.value)}
-          onBlur={() => {
-            onSave(temp);
-            setEditing(false);
-          }}
-          autoFocus
-          style={textareaStyle}
-        />
-      ) : (
-        <div onClick={() => setEditing(true)} style={{ cursor: "text" }}>
-          {value || "Click to add notes..."}
-        </div>
-      )}
-    </div>
-  );
-}
-
-//
-// 🔧 STYLES
-//
-
-const traceCardStyle: React.CSSProperties = {
-  border: "1px solid #e5e5e5",
-  borderRadius: 12,
-  padding: 14,
-  background: "#fcfcfc",
-  transition: "border-color 0.15s ease",
-};
-
-const notesBoxStyle: React.CSSProperties = {
-  border: "1px solid #e5e5e5",
-  borderRadius: 12,
-  padding: 14,
-  background: "#fafafa",
-  minHeight: 72,
-  fontSize: 14,
-  color: "#333",
-};
-
-const inputStyle: React.CSSProperties = {
-  height: 34,
-  borderRadius: 8,
-  border: "1px solid #ccc",
-  padding: "0 10px",
-  fontSize: 14,
-};
-
-const textareaStyle: React.CSSProperties = {
-  minHeight: 70,
-  borderRadius: 8,
-  border: "1px solid #ccc",
-  padding: "10px",
-  fontSize: 13,
-};
-
-const changeRowStyle: React.CSSProperties = {
-  border: "1px solid #e3e3e3",
-  borderRadius: 10,
-  padding: "12px",
-  background: "#fafafa",
-  fontSize: 14,
-};
-
-const emptyBoxStyle: React.CSSProperties = {
-  border: "1px dashed #cfcfcf",
-  borderRadius: 12,
-  padding: 16,
-  background: "#fafafa",
-  color: "#555",
-};
-
-const primaryButtonStyle: React.CSSProperties = {
-  height: 42,
-  padding: "0 16px",
-  borderRadius: 10,
-  border: "none",
-  background: "#111",
-  color: "#fff",
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
-const secondaryButtonStyle: React.CSSProperties = {
-  height: 42,
-  padding: "0 16px",
-  borderRadius: 10,
-  border: "1px solid #d7d7d7",
-  background: "#fff",
-  fontWeight: 600,
-  cursor: "pointer",
-};
