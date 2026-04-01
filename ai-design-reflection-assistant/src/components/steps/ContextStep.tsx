@@ -1,6 +1,8 @@
+import { motion } from "framer-motion";
+import { Check, AlertTriangle } from "lucide-react";
+import { cn } from "../../lib/utils";
 import { useReflection } from "../../features/reflection/state/ReflectionContext";
 import type { ContextItem, DesignStage } from "../../features/reflection/types";
-import Tooltip from "../../components/Tooltip";
 
 const DESIGN_STAGES: { value: DesignStage; label: string }[] = [
   { value: "research", label: "Research" },
@@ -17,35 +19,108 @@ const CONTEXT_OPTIONS: { value: ContextItem; label: string; sensitive?: boolean 
   { value: "internal-docs", label: "Internal documentation", sensitive: true },
 ];
 
+const Field = ({
+  label,
+  helper,
+  children,
+}: {
+  label: string;
+  helper?: string;
+  children: React.ReactNode;
+}) => (
+  <div className="space-y-1.5">
+    <label className="text-xs font-medium text-foreground block">
+      {label}
+    </label>
+    {children}
+    {helper && (
+      <p className="text-[11px] text-muted-foreground">{helper}</p>
+    )}
+  </div>
+);
+
+const CheckboxChip = ({
+  label,
+  checked,
+  sensitive,
+  onToggle,
+}: {
+  label: string;
+  checked: boolean;
+  sensitive?: boolean;
+  onToggle: () => void;
+}) => (
+  <button
+    onClick={onToggle}
+    className={cn(
+      "flex items-center gap-2 px-3 py-2 rounded-lg border text-xs transition-all duration-150 text-left w-full",
+      checked
+        ? "border-primary/40 bg-primary/5 text-primary"
+        : "border-border bg-card text-foreground hover:bg-muted/40"
+    )}
+  >
+    <div
+      className={cn(
+        "w-4 h-4 rounded flex items-center justify-center border shrink-0 transition-colors",
+        checked ? "bg-primary border-primary" : "border-border"
+      )}
+    >
+      {checked && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+    </div>
+
+    <span className="flex-1">{label}</span>
+
+    {sensitive && (
+      <span className="flex items-center gap-1 text-[10px] text-amber-600 font-medium">
+        <AlertTriangle className="w-3 h-3" />
+        sensitive
+      </span>
+    )}
+  </button>
+);
+
 export function ContextStep() {
   const { state, dispatch } = useReflection();
 
+  const toggleStage = (value: DesignStage) => {
+    dispatch({ type: "TOGGLE_STAGE", value });
+  };
+
+  const toggleContext = (value: ContextItem) => {
+    dispatch({ type: "TOGGLE_CONTEXT", value });
+  };
+
+  const canContinue =
+    Boolean(state.selectedElement) ||
+    Boolean(state.productContext) ||
+    state.designStage.length > 0;
+
   return (
-    <div style={{ display: "grid", gap: 20, maxWidth: 700 }}>
-      
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.28, ease: "easeOut" }}
+      className="flex-1 overflow-y-auto panel-scroll p-5 space-y-6"
+    >
       {/* HEADER */}
-      <div>
-        <div style={{ fontSize: 12, color: "#666" }}>Step 2 of 6</div>
+      <div className="space-y-1">
+        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-[0.16em]">
+          STEP 2 OF 6
+        </p>
 
-        <h1 style={{ fontSize: 26, margin: "6px 0 0" }}>
+        <h3 className="text-sm font-semibold text-foreground">
           Provide design context
-        </h1>
+        </h3>
 
-        <p style={{ fontSize: 14, color: "#555", lineHeight: 1.6 }}>
+        <p className="text-xs text-muted-foreground leading-relaxed">
           Help the AI understand your design so it can give more relevant and accurate feedback.
         </p>
       </div>
 
       {/* SELECTED ELEMENT */}
-      <label style={{ display: "grid", gap: 6 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>
-          What part of the design are you working on?
-          <Tooltip text="Describe the specific screen or component you want feedback on." />
-        </span>
-
+      <Field label="What part of the design are you working on?">
         <input
           value={state.selectedElement}
-          placeholder="e.g. Checkout screen, navigation bar, booking form"
           onChange={(e) =>
             dispatch({
               type: "SET_FIELD",
@@ -53,20 +128,15 @@ export function ContextStep() {
               value: e.target.value,
             })
           }
-          style={inputStyle}
+          placeholder="Onboarding screen – Figma Frame"
+          className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-xs outline-none placeholder:text-muted-foreground/60 focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all"
         />
-      </label>
+      </Field>
 
       {/* PRODUCT CONTEXT */}
-      <label style={{ display: "grid", gap: 6 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>
-          What is this product or feature?
-          <Tooltip text="Explain what your product does and the context of this design." />
-        </span>
-
+      <Field label="What is this product or feature?">
         <input
           value={state.productContext}
-          placeholder="e.g. A mobile app for booking restaurants"
           onChange={(e) =>
             dispatch({
               type: "SET_FIELD",
@@ -74,88 +144,50 @@ export function ContextStep() {
               value: e.target.value,
             })
           }
-          style={inputStyle}
+          placeholder="Fitness tracking app"
+          className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-xs outline-none placeholder:text-muted-foreground/60 focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all"
         />
-      </label>
+      </Field>
 
       {/* DESIGN STAGE */}
-      <div style={{ display: "grid", gap: 6 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>
-          What stage are you in?
-          <Tooltip text="This helps the AI adapt feedback to your design process." />
-        </span>
-
-        <span style={{ fontSize: 12, color: "#777" }}>
-          Select the stage that best matches your current work.
-        </span>
-
-        <div style={{ display: "grid", gap: 10 }}>
+      <Field
+        label="What stage are you in?"
+        helper="Select the stage that best matches your current work."
+      >
+        <div className="grid grid-cols-2 gap-2">
           {DESIGN_STAGES.map((stage) => (
-            <label key={stage.value} style={checkboxRowStyle}>
-              <input
-                type="checkbox"
-                checked={state.designStage.includes(stage.value)}
-                onChange={() =>
-                  dispatch({
-                    type: "TOGGLE_STAGE",
-                    value: stage.value,
-                  })
-                }
-              />
-              <span>{stage.label}</span>
-            </label>
+            <CheckboxChip
+              key={stage.value}
+              label={stage.label}
+              checked={state.designStage.includes(stage.value)}
+              onToggle={() => toggleStage(stage.value)}
+            />
           ))}
         </div>
-      </div>
+      </Field>
 
-      {/* CONTEXT FOR AI */}
-      <div style={{ display: "grid", gap: 6 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>
-          What information should the AI use?
-          <Tooltip text="Select what parts of your design or research should be considered." />
-        </span>
-
-        <span style={{ fontSize: 12, color: "#777" }}>
-          This simulates what the AI has access to (e.g. from Figma or documents).
-        </span>
-
-        <div style={{ display: "grid", gap: 10 }}>
+      {/* CONTEXT OPTIONS */}
+      <Field
+        label="What information should the AI use?"
+        helper="This simulates what the AI has access to (e.g., from Figma or documents)."
+      >
+        <div className="space-y-1.5">
           {CONTEXT_OPTIONS.map((item) => (
-            <label key={item.value} style={checkboxRowStyle}>
-              <input
-                type="checkbox"
-                checked={state.contextSelection.includes(item.value)}
-                onChange={() =>
-                  dispatch({
-                    type: "TOGGLE_CONTEXT",
-                    value: item.value,
-                  })
-                }
-              />
-              <div style={{ display: "grid", gap: 2 }}>
-                <span>{item.label}</span>
-
-                {item.sensitive && (
-                  <span style={{ fontSize: 12, color: "#777" }}>
-                    Sensitive — include only if necessary
-                  </span>
-                )}
-              </div>
-            </label>
+            <CheckboxChip
+              key={item.value}
+              label={item.label}
+              checked={state.contextSelection.includes(item.value)}
+              sensitive={item.sensitive}
+              onToggle={() => toggleContext(item.value)}
+            />
           ))}
         </div>
-      </div>
+      </Field>
 
-      {/* ADDITIONAL CONTEXT */}
-      <label style={{ display: "grid", gap: 6 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>
-          Anything else the AI should know?
-          <Tooltip text="Add any extra details that might influence the feedback." />
-        </span>
-
+      {/* EXTRA NOTES */}
+      <Field label="Anything else the AI should know?">
         <textarea
           value={state.designerNotes}
-          placeholder="e.g. Users often struggle with this step based on usability tests"
           onChange={(e) =>
             dispatch({
               type: "SET_FIELD",
@@ -163,66 +195,34 @@ export function ContextStep() {
               value: e.target.value,
             })
           }
-          style={textareaStyle}
+          placeholder="This screen appears after account creation."
+          rows={3}
+          className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-xs outline-none resize-none placeholder:text-muted-foreground/60 focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all"
         />
-      </label>
+      </Field>
 
       {/* ACTIONS */}
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
-        <button onClick={() => dispatch({ type: "PREV_STEP" })} style={secondaryButtonStyle}>
+      <div className="flex gap-2 pt-2">
+        <button
+          onClick={() => dispatch({ type: "SET_STEP", step: 0 })}
+          className="flex-1 py-2.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-muted/50 transition-all"
+        >
           Back
         </button>
 
-        <button onClick={() => dispatch({ type: "NEXT_STEP" })} style={primaryButtonStyle}>
+        <button
+          disabled={!canContinue}
+          onClick={() => dispatch({ type: "NEXT_STEP" })}
+          className={cn(
+            "flex-1 py-2.5 rounded-lg text-xs font-medium transition-all",
+            canContinue
+              ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20 hover:shadow-md hover:shadow-primary/25"
+              : "bg-muted text-muted-foreground cursor-not-allowed"
+          )}
+        >
           Continue
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 }
-
-const inputStyle: React.CSSProperties = {
-  height: 42,
-  borderRadius: 10,
-  border: "1px solid #d7d7d7",
-  padding: "0 12px",
-};
-
-const textareaStyle: React.CSSProperties = {
-  minHeight: 88,
-  borderRadius: 10,
-  border: "1px solid #d7d7d7",
-  padding: "12px",
-  resize: "vertical",
-};
-
-const checkboxRowStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "flex-start",
-  gap: 10,
-  border: "1px solid #e3e3e3",
-  borderRadius: 10,
-  padding: "10px 12px",
-};
-
-const primaryButtonStyle: React.CSSProperties = {
-  height: 42,
-  padding: "0 16px",
-  borderRadius: 10,
-  border: "none",
-  background: "#111",
-  color: "#fff",
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
-const secondaryButtonStyle: React.CSSProperties = {
-  height: 42,
-  padding: "0 16px",
-  borderRadius: 10,
-  border: "1px solid #d7d7d7",
-  background: "#fff",
-  color: "#111",
-  fontWeight: 600,
-  cursor: "pointer",
-};

@@ -12,7 +12,7 @@ export function PluginShell({ children }: PluginShellProps) {
   const [panelOpen, setPanelOpen] = useState(true);
 
   return (
-    <div className="h-screen flex bg-background overflow-hidden relative">
+    <div className="h-screen flex bg-background overflow-hidden">
 
       {/* Canvas */}
       <div className="flex-1 flex items-center justify-center text-muted-foreground">
@@ -57,7 +57,7 @@ export function PluginShell({ children }: PluginShellProps) {
         <StepNavigator />
 
         {/* Step Content */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-y-auto panel-scroll">
           {children}
         </div>
       </div>
