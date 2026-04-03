@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useReflection } from "../../features/reflection/state/ReflectionContext";
+import { callReflectApi } from "../../lib/reflectApi";
 
 const steps = [
   { id: 0, label: "Intent", icon: Target },
@@ -22,6 +23,36 @@ const steps = [
 export default function StepNavigator() {
   const { state, dispatch } = useReflection();
 
+  async function handleStepClick(stepId: number) {
+    if (stepId === 3 && state.currentStep !== 3) {
+      try {
+        dispatch({ type: "SET_LOADING", loading: true });
+
+        const payload = {
+          goal: state.goal,
+          audience: state.audience,
+          productContext: state.productContext,
+          designStage: state.designStage,
+          contextSelection: state.contextSelection,
+          options: state.generatedOptions,
+        };
+
+        const result = await callReflectApi(payload);
+
+        dispatch({
+          type: "SET_REFLECTION_RESULT",
+          payload: result,
+        });
+      } catch (err) {
+        console.error("Reflection API error:", err);
+      } finally {
+        dispatch({ type: "SET_LOADING", loading: false });
+      }
+    }
+
+    dispatch({ type: "SET_STEP", step: stepId });
+  }
+
   return (
     <div className="px-4 py-5 border-b border-border">
       <div className="flex items-center gap-1">
@@ -33,7 +64,7 @@ export default function StepNavigator() {
           return (
             <div key={step.id} className="flex items-center flex-1">
               <button
-                onClick={() => dispatch({ type: "SET_STEP", step: step.id })}
+                onClick={() => handleStepClick(step.id)}
                 className={cn(
                   "relative flex flex-col items-center gap-1.5 w-full group transition-all duration-200",
                   isActive && "scale-[1.02]"
@@ -87,6 +118,12 @@ export default function StepNavigator() {
           );
         })}
       </div>
+
+      {state.loading && (
+        <div className="text-xs text-muted-foreground mt-2 px-1">
+          Reflecting…
+        </div>
+      )}
     </div>
   );
 }

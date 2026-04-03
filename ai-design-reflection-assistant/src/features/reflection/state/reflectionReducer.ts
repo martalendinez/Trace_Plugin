@@ -5,7 +5,7 @@ import type {
   OptionCard,
   CritiqueCategory,
   CritiqueItem,
-  ChangeInstruction, // ⭐ NEW
+  ChangeInstruction,
 } from "../types";
 
 export function reflectionReducer(
@@ -146,7 +146,7 @@ export function reflectionReducer(
       };
 
     // -----------------------------
-    // IMPROVEMENTS (Critique → Apply)
+    // IMPROVEMENTS
     // -----------------------------
     case "ADD_IMPROVEMENT":
       return {
@@ -175,7 +175,7 @@ export function reflectionReducer(
       };
 
     // -----------------------------
-    // OWN IMPROVEMENT (textarea)
+    // OWN IMPROVEMENT
     // -----------------------------
     case "ADD_OWN_IMPROVEMENT":
       if (!state.ownImprovement.trim()) return state;
@@ -193,7 +193,7 @@ export function reflectionReducer(
       };
 
     // -----------------------------
-    // ⭐ NEW: SET CHANGE INSTRUCTIONS
+    // CHANGE INSTRUCTIONS
     // -----------------------------
     case "SET_CHANGE_INSTRUCTIONS":
       return {
@@ -202,8 +202,20 @@ export function reflectionReducer(
       };
 
     // -----------------------------
-    // DEFAULT
+    // ⭐ BACKEND INTEGRATION FIXED
     // -----------------------------
+    case "SET_LOADING":
+      return { ...state, loading: action.loading };
+
+    case "SET_REFLECTION_RESULT":
+      return {
+        ...state,
+        generatedOptions: action.payload.options,   // ⭐ FIXED
+        critiques: action.payload.critiques,
+        improvements: action.payload.improvements,
+        changeInstructions: action.payload.changeInstructions,
+      };
+
     default:
       return state;
   }

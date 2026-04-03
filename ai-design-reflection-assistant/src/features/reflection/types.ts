@@ -70,7 +70,7 @@ export interface ChatMessage {
 }
 
 //
-// ⭐ NEW: Change instructions the AI can send to the Figma plugin
+// ⭐ AI → Figma plugin change instructions
 //
 export type ChangeInstruction =
   | {
@@ -90,6 +90,9 @@ export type ChangeInstruction =
       height: number;
     };
 
+//
+// ⭐ Full Reflection State
+//
 export interface ReflectionState {
   currentStep: number;
   taskMode: TaskMode;
@@ -124,7 +127,12 @@ export interface ReflectionState {
   appliedChanges: string[];
 
   //
-  // ⭐ NEW: AI-generated instructions for the Figma plugin
+  // ⭐ AI-generated instructions for the Figma plugin
   //
   changeInstructions: ChangeInstruction[];
+
+  //
+  // ⭐ For backend loading state
+  //
+  loading?: boolean;
 }
