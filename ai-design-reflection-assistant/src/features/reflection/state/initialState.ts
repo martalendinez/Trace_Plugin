@@ -33,8 +33,11 @@ export const initialReflectionState: ReflectionState = {
   ownImprovement: "",
 
   /** NEW FIELDS REQUIRED BY types.ts **/
-  improvements: [],            // ← must exist
-  refinementChat: [],          // ← must exist
+  improvements: [],            // ← already present
+  refinementChat: [],          // ← already present
 
   appliedChanges: [],
+
+  /** ⭐ NEW FIELD: AI → Figma change instructions **/
+  changeInstructions: [],       // ← this is the new required field
 };

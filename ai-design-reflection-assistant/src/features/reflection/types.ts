@@ -69,6 +69,27 @@ export interface ChatMessage {
   content: string;
 }
 
+//
+// ⭐ NEW: Change instructions the AI can send to the Figma plugin
+//
+export type ChangeInstruction =
+  | {
+      type: "update_text";
+      nodeId: string;
+      value: string;
+    }
+  | {
+      type: "change_color";
+      nodeId: string;
+      color: string;
+    }
+  | {
+      type: "resize_node";
+      nodeId: string;
+      width: number;
+      height: number;
+    };
+
 export interface ReflectionState {
   currentStep: number;
   taskMode: TaskMode;
@@ -101,4 +122,9 @@ export interface ReflectionState {
   refinementChat: ChatMessage[];
 
   appliedChanges: string[];
+
+  //
+  // ⭐ NEW: AI-generated instructions for the Figma plugin
+  //
+  changeInstructions: ChangeInstruction[];
 }

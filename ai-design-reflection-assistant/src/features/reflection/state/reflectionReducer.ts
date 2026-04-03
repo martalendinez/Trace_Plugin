@@ -5,6 +5,7 @@ import type {
   OptionCard,
   CritiqueCategory,
   CritiqueItem,
+  ChangeInstruction, // ⭐ NEW
 } from "../types";
 
 export function reflectionReducer(
@@ -189,6 +190,15 @@ export function reflectionReducer(
           },
         ],
         ownImprovement: "",
+      };
+
+    // -----------------------------
+    // ⭐ NEW: SET CHANGE INSTRUCTIONS
+    // -----------------------------
+    case "SET_CHANGE_INSTRUCTIONS":
+      return {
+        ...state,
+        changeInstructions: action.value as ChangeInstruction[],
       };
 
     // -----------------------------
