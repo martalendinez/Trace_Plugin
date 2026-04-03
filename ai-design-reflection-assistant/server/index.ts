@@ -1,3 +1,6 @@
+require("dotenv").config();
+console.log("ENV LOADED:", process.env.OPENAI_API_KEY ? "YES" : "NO");
+
 const express = require("express");
 const cors = require("cors");
 const reflectRoute = require("./reflect");
