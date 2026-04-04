@@ -1,9 +1,13 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, AlertTriangle, Info } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useReflection } from "../../features/reflection/state/ReflectionContext";
-import type { CritiqueItem, CritiqueCategory } from "../../features/reflection/types";
+import { callReflectApi } from "../../lib/reflectApi";
+import type {
+  CritiqueItem,
+  CritiqueCategory,
+} from "../../features/reflection/types";
 
 const severityConfig = {
   warning: {
@@ -50,7 +54,12 @@ function CritiqueCard({
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-start gap-3 p-3 text-left"
       >
-        <div className={cn("w-1.5 h-1.5 rounded-full mt-1.5 shrink-0", config.dot)} />
+        <div
+          className={cn(
+            "w-1.5 h-1.5 rounded-full mt-1.5 shrink-0",
+            config.dot
+          )}
+        />
 
         <div className="flex-1 min-w-0">
           <span
@@ -90,7 +99,9 @@ function CritiqueCard({
               </p>
 
               <p className="text-xs text-muted-foreground leading-relaxed">
-                <span className="font-medium text-foreground">Suggestion: </span>
+                <span className="font-medium text-foreground">
+                  Suggestion:{" "}
+                </span>
                 {critique.suggestion}
               </p>
 
@@ -138,10 +149,54 @@ const CATEGORIES: { value: CritiqueCategory; label: string }[] = [
 export function CritiqueStep() {
   const { state, dispatch } = useReflection();
 
+  /* -------------------------------------------------------
+     ⭐ AUTO‑GENERATE CRITIQUES WHEN CHECKBOXES CHANGE
+  ------------------------------------------------------- */
   useEffect(() => {
-    dispatch({ type: "RUN_CRITIQUE" });
-  }, [state.activeCritiqueCategories]);
+    async function runCritique() {
+      if (!state.selectedOptionId) return;
 
+      dispatch({ type: "SET_LOADING", loading: true });
+
+      const selectedOption = state.generatedOptions.find(
+        (o) => o.id === state.selectedOptionId
+      );
+
+      const payload = {
+        goal: state.goal,
+        audience: state.audience,
+        productContext: state.productContext,
+        designStage: state.designStage,
+        contextSelection: state.contextSelection,
+        selectedOption,
+      };
+
+      const result = await callReflectApi(payload);
+
+      dispatch({
+        type: "SET_REFLECTION_RESULT",
+        payload: result,
+      });
+
+      dispatch({ type: "SET_LOADING", loading: false });
+    }
+
+    runCritique();
+  }, [state.selectedOptionId]);
+
+  /* -------------------------------------------------------
+     ⭐ FILTER CRITIQUES BASED ON SELECTED CATEGORIES
+  ------------------------------------------------------- */
+  const filteredCritiques =
+    state.activeCritiqueCategories.length === 0
+      ? state.critiques
+      : state.critiques.filter((c) =>
+          state.activeCritiqueCategories.includes(c.category)
+        );
+
+  /* -------------------------------------------------------
+     APPLY / DISCUSS HANDLERS
+  ------------------------------------------------------- */
   const handleApply = (critique: CritiqueItem) => {
     dispatch({ type: "ADD_IMPROVEMENT", text: critique.suggestion });
     dispatch({ type: "REMOVE_CRITIQUE", id: critique.id });
@@ -172,13 +227,16 @@ export function CritiqueStep() {
         <h3 className="text-sm font-semibold text-foreground">Critique mode</h3>
 
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Review potential issues critically. Apply suggestions you want to keep.
+          Review potential issues critically. Apply suggestions you want to
+          keep.
         </p>
       </div>
 
       {/* CATEGORY CHECKBOXES */}
       <div className="space-y-2">
-        <span className="text-xs font-medium text-foreground">Consider before continuing</span>
+        <span className="text-xs font-medium text-foreground">
+          Consider before continuing
+        </span>
 
         <div className="space-y-2">
           {CATEGORIES.map((cat) => (
@@ -190,7 +248,10 @@ export function CritiqueStep() {
                 type="checkbox"
                 checked={state.activeCritiqueCategories.includes(cat.value)}
                 onChange={() =>
-                  dispatch({ type: "TOGGLE_CRITIQUE_CATEGORY", value: cat.value })
+                  dispatch({
+                    type: "TOGGLE_CRITIQUE_CATEGORY",
+                    value: cat.value,
+                  })
                 }
               />
               <span>{cat.label}</span>
@@ -201,7 +262,7 @@ export function CritiqueStep() {
 
       {/* CRITIQUE LIST */}
       <AnimatePresence mode="popLayout">
-        {state.critiques.length === 0 ? (
+        {filteredCritiques.length === 0 ? (
           <motion.div
             key="empty"
             initial={{ opacity: 0 }}
@@ -209,12 +270,12 @@ export function CritiqueStep() {
             className="border border-dashed border-border rounded-lg p-4 bg-muted/20 text-center"
           >
             <p className="text-xs text-muted-foreground">
-              No critique items available. Select categories or continue.
+              No critiques match the selected categories.
             </p>
           </motion.div>
         ) : (
           <div className="space-y-2.5">
-            {state.critiques.map((critique) => (
+            {filteredCritiques.map((critique) => (
               <CritiqueCard
                 key={critique.id}
                 critique={critique}

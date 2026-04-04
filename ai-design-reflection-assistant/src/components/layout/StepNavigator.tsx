@@ -24,9 +24,14 @@ export default function StepNavigator() {
   const { state, dispatch } = useReflection();
 
   async function handleStepClick(stepId: number) {
-    if (stepId === 3 && state.currentStep !== 3) {
+    // ⭐ Only Critique step requires waiting for AI
+    if (stepId === 3) {
       try {
         dispatch({ type: "SET_LOADING", loading: true });
+
+        const selectedOption = state.generatedOptions.find(
+          (o) => o.id === state.selectedOptionId
+        );
 
         const payload = {
           goal: state.goal,
@@ -34,7 +39,7 @@ export default function StepNavigator() {
           productContext: state.productContext,
           designStage: state.designStage,
           contextSelection: state.contextSelection,
-          options: state.generatedOptions,
+          selectedOption,
         };
 
         const result = await callReflectApi(payload);
@@ -43,13 +48,19 @@ export default function StepNavigator() {
           type: "SET_REFLECTION_RESULT",
           payload: result,
         });
+
+        // ⭐ Only navigate AFTER AI finishes
+        dispatch({ type: "SET_STEP", step: 3 });
       } catch (err) {
         console.error("Reflection API error:", err);
       } finally {
         dispatch({ type: "SET_LOADING", loading: false });
       }
+
+      return; // ⭐ Prevent default navigation
     }
 
+    // Normal navigation for other steps
     dispatch({ type: "SET_STEP", step: stepId });
   }
 
@@ -81,19 +92,6 @@ export default function StepNavigator() {
                   )}
                 >
                   <Icon className="w-3.5 h-3.5" />
-
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeStep"
-                      className="absolute inset-0 rounded-lg bg-primary"
-                      style={{ zIndex: -1 }}
-                      transition={{
-                        type: "spring",
-                        stiffness: 400,
-                        damping: 30,
-                      }}
-                    />
-                  )}
                 </div>
 
                 <span

@@ -28,12 +28,22 @@ function CurrentStep() {
   }
 }
 
+function InnerApp() {
+  const { state } = useReflection();
+
+  return (
+    <PluginShell>
+      <div key={state.currentStep}>
+        <CurrentStep />
+      </div>
+    </PluginShell>
+  );
+}
+
 export default function App() {
   return (
     <ReflectionProvider>
-      <PluginShell>
-        <CurrentStep />
-      </PluginShell>
+      <InnerApp />
     </ReflectionProvider>
   );
 }

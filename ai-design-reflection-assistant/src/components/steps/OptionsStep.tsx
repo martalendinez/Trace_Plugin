@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useReflection } from "../../features/reflection/state/ReflectionContext";
+import { generateOptions } from "../../lib/generateOptions";
 
 export function OptionsStep() {
   const { state, dispatch } = useReflection();
@@ -16,14 +17,30 @@ export function OptionsStep() {
     [state.generatedOptions, state.selectedOptionId]
   );
 
-  const handleGenerate = () => {
-    setIsGenerating(true);
-    dispatch({ type: "GENERATE_OPTIONS" });
+  const handleShuffle = async () => {
+    try {
+      setIsGenerating(true);
 
-    // mimic Base44 "shuffle" animation delay
-    setTimeout(() => {
+      const payload = {
+        goal: state.goal,
+        audience: state.audience,
+        productContext: state.productContext,
+        designStage: state.designStage,
+        contextSelection: state.contextSelection,
+      };
+
+      const result = await generateOptions(payload);
+
+      dispatch({
+        type: "SET_FIELD",
+        field: "generatedOptions",
+        value: result.options,
+      });
+    } catch (err) {
+      console.error("Shuffle error:", err);
+    } finally {
       setIsGenerating(false);
-    }, 600);
+    }
   };
 
   const toggleReasoning = (id: string) => {
@@ -46,7 +63,7 @@ export function OptionsStep() {
         <h3 className="text-sm font-semibold text-foreground">Options</h3>
 
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Generate multiple candidate directions instead of one “correct” answer.
+          Click Shuffle to generate new AI options.
         </p>
       </div>
 
@@ -54,7 +71,7 @@ export function OptionsStep() {
       {state.generatedOptions.length === 0 && (
         <div className="border border-dashed border-border rounded-lg p-4 bg-muted/20 text-center">
           <p className="text-xs text-muted-foreground">
-            No options generated yet. Click below to create design directions.
+            No options yet. Click Shuffle to generate AI options.
           </p>
         </div>
       )}
@@ -189,24 +206,21 @@ export function OptionsStep() {
         </button>
 
         <button
-          onClick={handleGenerate}
+          onClick={handleShuffle}
           disabled={isGenerating}
           className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-muted/50 transition-all disabled:opacity-50"
         >
           <RefreshCw
             className={cn("w-3.5 h-3.5", isGenerating && "animate-spin")}
           />
-          Generate
+          Shuffle
         </button>
 
         <button
-          disabled={!selectedOption}
           onClick={() => dispatch({ type: "NEXT_STEP" })}
           className={cn(
             "flex-1 py-2.5 rounded-lg text-xs font-medium transition-all",
-            selectedOption
-              ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20 hover:shadow-md hover:shadow-primary/25"
-              : "bg-muted text-muted-foreground cursor-not-allowed"
+            "bg-primary text-primary-foreground shadow-sm shadow-primary/20 hover:shadow-md hover:shadow-primary/25"
           )}
         >
           Continue

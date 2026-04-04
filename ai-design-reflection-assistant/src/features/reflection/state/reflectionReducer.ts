@@ -60,49 +60,9 @@ export function reflectionReducer(
     }
 
     // -----------------------------
-    // OPTIONS GENERATION
+    // OPTIONS
     // -----------------------------
-    case "GENERATE_OPTIONS": {
-      const mockOptions: OptionCard[] = [
-        {
-          id: "guided_onboarding",
-          title: "Guided onboarding",
-          summary: "Short step-by-step guidance for first-time users.",
-          problem: "Users feel overwhelmed when too many fields appear at once.",
-          assumption: "Breaking tasks into steps reduces cognitive load.",
-          principle: "Progressive disclosure",
-          tradeoff: "More steps may increase total time.",
-          suggestedChanges: [],
-        },
-        {
-          id: "progressive_disclosure",
-          title: "Progressive disclosure",
-          summary: "Show only essential fields upfront.",
-          problem: "Users abandon when forms feel too long.",
-          assumption: "Most users only need the basic path.",
-          principle: "Simplicity first",
-          tradeoff: "Advanced users may need extra clicks.",
-          suggestedChanges: [],
-        },
-        {
-          id: "contextual_tooltips",
-          title: "Contextual tooltips",
-          summary: "Inline hints appear next to each input.",
-          problem: "Terminology may be unfamiliar.",
-          assumption: "Inline help reduces confusion.",
-          principle: "Just-in-time guidance",
-          tradeoff: "Too many tooltips can feel noisy.",
-          suggestedChanges: [],
-        },
-      ];
-
-      return {
-        ...state,
-        generatedOptions: mockOptions,
-        selectedOptionId: null,
-      };
-    }
-
+    // (No more mock GENERATE_OPTIONS — options now come from AI)
     case "SELECT_OPTION":
       return { ...state, selectedOptionId: action.value };
 
@@ -118,25 +78,6 @@ export function reflectionReducer(
           ? state.activeCritiqueCategories.filter((c) => c !== value)
           : [...state.activeCritiqueCategories, value],
       };
-    }
-
-    case "RUN_CRITIQUE": {
-      if (state.activeCritiqueCategories.length === 0) {
-        return { ...state, critiques: [] };
-      }
-
-      const mockCritiques: CritiqueItem[] = state.activeCritiqueCategories.map(
-        (cat) => ({
-          id: crypto.randomUUID(),
-          category: cat,
-          title: `Issue related to ${cat}`,
-          concern: `A potential concern in the area of ${cat}.`,
-          suggestion: `A suggested improvement for ${cat}.`,
-          uncertaintyNote: "This critique may not apply in all contexts.",
-        })
-      );
-
-      return { ...state, critiques: mockCritiques };
     }
 
     case "REMOVE_CRITIQUE":
@@ -202,7 +143,7 @@ export function reflectionReducer(
       };
 
     // -----------------------------
-    // ⭐ BACKEND INTEGRATION FIXED
+    // BACKEND INTEGRATION
     // -----------------------------
     case "SET_LOADING":
       return { ...state, loading: action.loading };
@@ -210,8 +151,10 @@ export function reflectionReducer(
     case "SET_REFLECTION_RESULT":
       return {
         ...state,
-        generatedOptions: action.payload.options,   // ⭐ FIXED
-        critiques: action.payload.critiques,
+        generatedOptions: action.payload.options as OptionCard[],
+        // keep selectedOptionId if still valid, otherwise reset
+        selectedOptionId: state.selectedOptionId,
+        critiques: action.payload.critiques as CritiqueItem[],
         improvements: action.payload.improvements,
         changeInstructions: action.payload.changeInstructions,
       };

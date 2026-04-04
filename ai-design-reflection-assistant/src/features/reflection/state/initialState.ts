@@ -1,43 +1,39 @@
 import type { ReflectionState } from "../types";
 
 export const initialReflectionState: ReflectionState = {
-  currentStep: 0, // ⭐ Start on Intent
+  currentStep: 0,
   taskMode: "generate-ideas",
-  goal: "Improve onboarding flow",
-  audience: "First-time users",
+  goal: "",
+  audience: "",
   maxSteps: 6,
 
-  selectedElement: "Onboarding screen - Figma Frame",
-  productContext: "Fitness tracking app",
+  selectedElement: "",
+  productContext: "",
 
   goalNotes: "",
   audienceNotes: "",
   selectedElementNotes: "",
   productContextNotes: "",
 
-  designerNotes: "This screen appears after account creation.",
+  designerNotes: "",
 
-  designStage: ["high-fidelity"],
-  contextSelection: ["selected-ui", "button-labels", "input-fields"],
+  designStage: [],
+  contextSelection: [],
 
   generatedOptions: [],
   selectedOptionId: null,
 
-  activeCritiqueCategories: [
-    "accessibility",
-    "edge-cases",
-    "interaction-complexity",
-  ],
+  activeCritiqueCategories: [],
   critiques: [],
 
   ownImprovement: "",
 
-  /** NEW FIELDS REQUIRED BY types.ts **/
-  improvements: [],            // ← already present
-  refinementChat: [],          // ← already present
+  improvements: [],
+  refinementChat: [],
 
   appliedChanges: [],
 
-  /** ⭐ NEW FIELD: AI → Figma change instructions **/
-  changeInstructions: [],       // ← this is the new required field
+  changeInstructions: [],
+
+  loading: false,
 };
