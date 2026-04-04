@@ -3,7 +3,7 @@
     "target": "ESNext",
     "module": "ESNext",
     "jsx": "react-jsx",
-    "moduleResolution": "Node",
+    "moduleResolution": "Bundler",
     "allowJs": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -17,7 +17,8 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    "erasableSyntaxOnly": true
+    "erasableSyntaxOnly": true,
+    
   },
   "include": ["src"]
 }

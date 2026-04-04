@@ -1,23 +1,33 @@
-const { Router } = require("express");
-const OpenAI = require("openai");
-require("dotenv").config();
+import { Router } from "express";
+import Groq from "groq-sdk";
 
 const router = Router();
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 router.post("/", async (req, res) => {
   try {
+    if (!process.env.GROQ_API_KEY) {
+      console.error("Missing GROQ_API_KEY");
+      return res.status(500).json({ error: "Server misconfiguration: missing API key" });
+    }
+
+    const client = new Groq({
+      apiKey: process.env.GROQ_API_KEY,
+    });
+
     const {
       goal,
       audience,
       productContext,
-      designStage,
-      contextSelection,
-      options,
+      designStage = [],
+      contextSelection = [],
+      options = [],
     } = req.body;
 
     const prompt = `
-You are a senior UX design assistant. Analyze the following design context and return structured JSON only.
+You are a senior UX design assistant.
+
+Analyze the following design context and return ONLY valid JSON.
+Do not include explanations, markdown, or extra text.
 
 Goal: ${goal}
 Audience: ${audience}
@@ -26,38 +36,55 @@ Design stage: ${designStage.join(", ")}
 Context selection: ${contextSelection.join(", ")}
 
 User-generated options:
-${options.map((o) => `- ${o.title}: ${o.summary}`).join("\n")}
+${options.map((o: any) => `- ${o.title}: ${o.summary}`).join("\n")}
 
-Return JSON with:
+Return JSON with this exact structure:
 {
-  "options": [...],
-  "critiques": [...],
-  "improvements": [...],
-  "changeInstructions": [...]
+  "options": [],
+  "critiques": [],
+  "improvements": [],
+  "changeInstructions": []
 }
 `;
 
     const completion = await client.chat.completions.create({
-      model: "gpt-4.1",
-      response_format: { type: "json_object" },
+      model: "llama-3.3-70b-versatile", // ✅ UPDATED MODEL
       messages: [
-        { role: "system", content: "You are a precise UX design assistant." },
-        { role: "user", content: prompt },
+        {
+          role: "system",
+          content: "You are a precise and critical UX design expert.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
       ],
     });
 
-    const data = JSON.parse(completion.choices[0].message.content);
+    const raw = completion.choices[0]?.message?.content || "";
 
-    res.json({
+    console.log("RAW AI RESPONSE:", raw);
+
+    let data;
+
+    try {
+      data = JSON.parse(raw);
+    } catch (err) {
+      console.error("JSON parse error:", raw);
+      return res.status(500).json({ error: "Invalid AI JSON response" });
+    }
+
+    return res.json({
       options: data.options ?? [],
       critiques: data.critiques ?? [],
       improvements: data.improvements ?? [],
       changeInstructions: data.changeInstructions ?? [],
     });
+
   } catch (err) {
     console.error("Error in /api/reflect:", err);
-    res.status(500).json({ error: "Failed to process reflection" });
+    return res.status(500).json({ error: "Failed to process reflection" });
   }
 });
 
-module.exports = router;
+export default router;
