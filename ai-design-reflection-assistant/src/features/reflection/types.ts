@@ -2,9 +2,15 @@ export type StepId =
   | "intent"
   | "context"
   | "options"
+  | "refine-option"
   | "critique"
+  | "critique-chat"
   | "apply"
   | "trace";
+
+/* -----------------------------
+   TASK + CONTEXT TYPES
+----------------------------- */
 
 export type TaskMode =
   | "generate-ideas"
@@ -26,12 +32,9 @@ export type ContextItem =
   | "user-research"
   | "internal-docs";
 
-export type CritiqueCategory =
-  | "accessibility"
-  | "edge-cases"
-  | "interaction-complexity"
-  | "consistency"
-  | "usability";
+/* -----------------------------
+   OPTIONS
+----------------------------- */
 
 export interface OptionCard {
   id: string;
@@ -44,6 +47,17 @@ export interface OptionCard {
   suggestedChanges: string[];
 }
 
+/* -----------------------------
+   CRITIQUES
+----------------------------- */
+
+export type CritiqueCategory =
+  | "accessibility"
+  | "edge-cases"
+  | "interaction-complexity"
+  | "consistency"
+  | "usability";
+
 export interface CritiqueItem {
   id: string;
   category: CritiqueCategory;
@@ -53,10 +67,18 @@ export interface CritiqueItem {
   uncertaintyNote: string;
 }
 
-export interface TraceEntry {
-  label: string;
-  value: string;
+/* -----------------------------
+   CHAT
+----------------------------- */
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
 }
+
+/* -----------------------------
+   IMPROVEMENTS
+----------------------------- */
 
 export interface ImprovementItem {
   id: string;
@@ -64,37 +86,13 @@ export interface ImprovementItem {
   applied: boolean;
 }
 
-export interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-}
+/* -----------------------------
+   MAIN REFLECTION STATE
+----------------------------- */
 
-//
-// ⭐ AI → Figma plugin change instructions
-//
-export type ChangeInstruction =
-  | {
-      type: "update_text";
-      nodeId: string;
-      value: string;
-    }
-  | {
-      type: "change_color";
-      nodeId: string;
-      color: string;
-    }
-  | {
-      type: "resize_node";
-      nodeId: string;
-      width: number;
-      height: number;
-    };
-
-//
-// ⭐ Full Reflection State
-//
 export interface ReflectionState {
   currentStep: number;
+
   taskMode: TaskMode;
   goal: string;
   audience: string;
@@ -119,20 +117,25 @@ export interface ReflectionState {
   activeCritiqueCategories: CritiqueCategory[];
   critiques: CritiqueItem[];
 
+  improvements: ImprovementItem[];
+
   ownImprovement: string;
 
-  improvements: ImprovementItem[];
+  /* OPTION REFINEMENT */
   refinementChat: ChatMessage[];
+  isRefinementPageOpen: boolean;
+  optionBeingRefined: OptionCard | null;
+  refinedOptionDraft: OptionCard | null;
 
+  /* CRITIQUE CHAT */
+  isCritiqueChatOpen: boolean;
+  critiqueBeingDiscussed: CritiqueItem | null;
+  critiqueChat: ChatMessage[];
+  refinedCritiqueSuggestion: string | null;
+
+  /* APPLY + TRACE */
   appliedChanges: string[];
+  changeInstructions: any[];
 
-  //
-  // ⭐ AI-generated instructions for the Figma plugin
-  //
-  changeInstructions: ChangeInstruction[];
-
-  //
-  // ⭐ For backend loading state
-  //
   loading?: boolean;
 }

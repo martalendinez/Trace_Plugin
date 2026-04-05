@@ -11,7 +11,6 @@ import { initialReflectionState } from "./initialState";
 import { reflectionReducer } from "./reflectionReducer";
 import type { ReflectionState } from "../types";
 
-// Infer the action type from the reducer signature
 type ReflectionAction = Parameters<typeof reflectionReducer>[1];
 
 interface ReflectionContextValue {

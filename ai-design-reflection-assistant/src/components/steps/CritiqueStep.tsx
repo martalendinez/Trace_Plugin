@@ -146,12 +146,13 @@ const CATEGORIES: { value: CritiqueCategory; label: string }[] = [
   { value: "usability", label: "Usability" },
 ];
 
+// ⭐ Normalizer to fix backend category mismatches
+const normalize = (str: string) =>
+  str.replace(/_/g, "-").toLowerCase();
+
 export function CritiqueStep() {
   const { state, dispatch } = useReflection();
 
-  /* -------------------------------------------------------
-     ⭐ AUTO‑GENERATE CRITIQUES WHEN CHECKBOXES CHANGE
-  ------------------------------------------------------- */
   useEffect(() => {
     async function runCritique() {
       if (!state.selectedOptionId) return;
@@ -173,6 +174,12 @@ export function CritiqueStep() {
 
       const result = await callReflectApi(payload);
 
+      // ⭐ Normalize categories here too
+      result.critiques = result.critiques.map((c: CritiqueItem) => ({
+        ...c,
+        category: normalize(c.category),
+      }));
+
       dispatch({
         type: "SET_REFLECTION_RESULT",
         payload: result,
@@ -184,31 +191,23 @@ export function CritiqueStep() {
     runCritique();
   }, [state.selectedOptionId]);
 
-  /* -------------------------------------------------------
-     ⭐ FILTER CRITIQUES BASED ON SELECTED CATEGORIES
-  ------------------------------------------------------- */
+  // ⭐ FIXED FILTERING
   const filteredCritiques =
     state.activeCritiqueCategories.length === 0
       ? state.critiques
       : state.critiques.filter((c) =>
-          state.activeCritiqueCategories.includes(c.category)
+          state.activeCritiqueCategories
+            .map(normalize)
+            .includes(normalize(c.category))
         );
 
-  /* -------------------------------------------------------
-     APPLY / DISCUSS HANDLERS
-  ------------------------------------------------------- */
   const handleApply = (critique: CritiqueItem) => {
     dispatch({ type: "ADD_IMPROVEMENT", text: critique.suggestion });
     dispatch({ type: "REMOVE_CRITIQUE", id: critique.id });
   };
 
   const handleDiscuss = (critique: CritiqueItem) => {
-    dispatch({
-      type: "SET_FIELD",
-      field: "ownImprovement",
-      value: critique.suggestion,
-    });
-    dispatch({ type: "NEXT_STEP" });
+    dispatch({ type: "OPEN_CRITIQUE_CHAT", critique });
   };
 
   return (
@@ -218,21 +217,18 @@ export function CritiqueStep() {
       transition={{ duration: 0.28, ease: "easeOut" }}
       className="flex-1 overflow-y-auto panel-scroll p-5 space-y-6"
     >
-      {/* HEADER */}
       <div className="space-y-1">
         <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-[0.16em]">
-          STEP 4 OF 6
+          STEP 4 OF 7
         </p>
 
         <h3 className="text-sm font-semibold text-foreground">Critique mode</h3>
 
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Review potential issues critically. Apply suggestions you want to
-          keep.
+          Review potential issues critically. Apply suggestions you want to keep.
         </p>
       </div>
 
-      {/* CATEGORY CHECKBOXES */}
       <div className="space-y-2">
         <span className="text-xs font-medium text-foreground">
           Consider before continuing
@@ -260,7 +256,6 @@ export function CritiqueStep() {
         </div>
       </div>
 
-      {/* CRITIQUE LIST */}
       <AnimatePresence mode="popLayout">
         {filteredCritiques.length === 0 ? (
           <motion.div
@@ -287,7 +282,6 @@ export function CritiqueStep() {
         )}
       </AnimatePresence>
 
-      {/* ACTIONS */}
       <div className="flex gap-2 pt-2">
         <button
           onClick={() => dispatch({ type: "PREV_STEP" })}

@@ -5,7 +5,7 @@ export const initialReflectionState: ReflectionState = {
   taskMode: "generate-ideas",
   goal: "",
   audience: "",
-  maxSteps: 6,
+  maxSteps: 7,
 
   selectedElement: "",
   productContext: "",
@@ -26,13 +26,22 @@ export const initialReflectionState: ReflectionState = {
   activeCritiqueCategories: [],
   critiques: [],
 
+  improvements: [],
+
   ownImprovement: "",
 
-  improvements: [],
   refinementChat: [],
+  isRefinementPageOpen: false,
+  optionBeingRefined: null,
+  refinedOptionDraft: null,
+
+  /** NEW */
+  isCritiqueChatOpen: false,
+  critiqueBeingDiscussed: null,
+  critiqueChat: [],
+  refinedCritiqueSuggestion: null,
 
   appliedChanges: [],
-
   changeInstructions: [],
 
   loading: false,

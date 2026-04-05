@@ -229,4 +229,88 @@ Context selection: ${contextSelection.join(", ")}
   }
 });
 
+/* -------------------------------------------------------
+   OPTION REFINEMENT ENDPOINT
+-------------------------------------------------------- */
+router.post("/refine-option", async (req, res) => {
+  try {
+    const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+    const {
+      goal,
+      audience,
+      productContext,
+      designStage = [],
+      contextSelection = [],
+      option,
+      messages = [],
+    } = req.body;
+
+    const prompt = `
+You are a senior UX design assistant helping refine a single design option.
+
+Return STRICT JSON. No markdown. No commentary.
+
+You will receive:
+- The current option
+- The conversation so far
+- The latest user message
+
+You MUST:
+- Respond as the AI in the conversation
+- Optionally propose a refined version of the option
+
+Return JSON EXACTLY like this:
+
+{
+  "assistantMessage": "your reply to the user",
+  "refinedOption": {
+    "id": "string",
+    "title": "short option name",
+    "summary": "1–2 sentence summary",
+    "problem": "what problem this option addresses",
+    "assumption": "key assumption",
+    "principle": "design principle",
+    "tradeoff": "main trade-off",
+    "suggestedChanges": []
+  }
+}
+
+If you do NOT want to change the option, set "refinedOption" to null.
+
+Current option:
+${JSON.stringify(option, null, 2)}
+
+Conversation so far:
+${JSON.stringify(messages, null, 2)}
+
+Goal: ${goal}
+Audience: ${audience}
+Product context: ${productContext}
+Design stage: ${designStage.join(", ")}
+Context selection: ${contextSelection.join(", ")}
+`;
+
+    const completion = await client.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: "You are a precise UX design expert." },
+        { role: "user", content: prompt },
+      ],
+    });
+
+    const raw = completion.choices[0]?.message?.content || "";
+    const data = JSON.parse(raw);
+
+    return res.json({
+      assistantMessage: data.assistantMessage || "",
+      refinedOption: data.refinedOption || null,
+    });
+  } catch (err) {
+    console.error("Error in /api/reflect/refine-option:", err);
+    return res.status(500).json({ error: "Failed to refine option" });
+  }
+});
+
 export default router;

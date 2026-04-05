@@ -1,0 +1,176 @@
+import { useState } from "react";
+import { ArrowLeft } from "lucide-react";
+import { useReflection } from "../../features/reflection/state/ReflectionContext";
+import type { ChatMessage, OptionCard } from "../../features/reflection/types";
+
+const API = "http://localhost:3001";
+
+export function RefineOptionStep() {
+  const { state, dispatch } = useReflection();
+
+  const baseOption = state.optionBeingRefined;
+  const option: OptionCard | null =
+    state.refinedOptionDraft || state.optionBeingRefined;
+
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  if (!baseOption || !option) return null;
+
+  const handleBack = () => {
+    dispatch({ type: "CLOSE_REFINEMENT_PAGE" });
+  };
+
+  const handleSend = async () => {
+    if (!input.trim()) return;
+
+    const nextMessages: ChatMessage[] = [
+      ...messages,
+      { role: "user", content: input.trim() },
+    ];
+
+    setMessages(nextMessages);
+    setInput("");
+    setIsLoading(true);
+
+    try {
+      const res = await fetch(`${API}/api/reflect/refine-option`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          goal: state.goal,
+          audience: state.audience,
+          productContext: state.productContext,
+          designStage: state.designStage,
+          contextSelection: state.contextSelection,
+          option,
+          messages: nextMessages,
+        }),
+      });
+
+      const data = await res.json();
+
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: data.assistantMessage || "" },
+      ]);
+
+      if (data.refinedOption) {
+        dispatch({
+          type: "SET_REFINED_OPTION_DRAFT",
+          option: data.refinedOption,
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleApply = () => {
+    if (state.refinedOptionDraft) {
+      dispatch({
+        type: "APPLY_REFINED_OPTION",
+        option: state.refinedOptionDraft,
+      });
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full p-6 gap-6">
+      {/* HEADER */}
+      <div className="flex items-center gap-4">
+        <button
+          onClick={handleBack}
+          className="p-1 rounded-md hover:bg-muted/60 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+        </button>
+
+        <div className="space-y-0.5">
+          <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+            Refining option
+          </p>
+          <p className="text-sm font-semibold text-foreground truncate max-w-[260px]">
+            {option.title}
+          </p>
+        </div>
+      </div>
+
+      {/* SUMMARY */}
+      <div className="space-y-2">
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          {option.summary}
+        </p>
+
+        {option.problem && (
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            <span className="font-medium text-foreground">Problem: </span>
+            {option.problem}
+          </p>
+        )}
+      </div>
+
+      {/* CHAT */}
+      <div className="flex-1 flex flex-col gap-3 overflow-y-auto panel-scroll">
+        {messages.length === 0 && (
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Ask the AI to critique, improve, or explore variations of this
+            option before you select it.
+          </p>
+        )}
+
+        {messages.map((m, i) => (
+          <div
+            key={i}
+            className={
+              m.role === "user"
+                ? "self-end max-w-[80%] rounded-lg bg-primary text-primary-foreground px-3 py-2 text-[11px] leading-relaxed"
+                : "self-start max-w-[80%] rounded-lg bg-muted px-3 py-2 text-[11px] text-foreground leading-relaxed"
+            }
+          >
+            {m.content}
+          </div>
+        ))}
+
+        {isLoading && (
+          <p className="text-[11px] text-muted-foreground">Thinking…</p>
+        )}
+      </div>
+
+      {/* INPUT + APPLY */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-3">
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            placeholder="Ask about this option…"
+            className="flex-1 text-[11px] px-3 py-2 rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+
+          <button
+            onClick={handleSend}
+            disabled={isLoading || !input.trim()}
+            className="text-[11px] font-medium px-3 py-2 rounded-md bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
+          >
+            Send
+          </button>
+        </div>
+
+        <button
+          onClick={handleApply}
+          disabled={!state.refinedOptionDraft}
+          className="w-full text-[11px] font-medium px-3 py-2 rounded-md border border-primary text-primary hover:bg-primary/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          Apply refinement to option
+        </button>
+      </div>
+    </div>
+  );
+}
