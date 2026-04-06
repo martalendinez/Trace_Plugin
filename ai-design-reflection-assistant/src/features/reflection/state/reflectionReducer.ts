@@ -6,7 +6,6 @@ import type {
   OptionCard,
   CritiqueCategory,
   CritiqueItem,
-  ChatMessage,
 } from "../types";
 
 export function reflectionReducer(
@@ -23,7 +22,7 @@ export function reflectionReducer(
     case "NEXT_STEP":
       return {
         ...state,
-        currentStep: Math.min(state.currentStep + 1, state.maxSteps - 1),
+        currentStep: Math.min(state.currentStep + 1, 5),
       };
 
     case "PREV_STEP":
@@ -54,7 +53,6 @@ export function reflectionReducer(
       };
     }
 
-    /** ⭐ FIXED: THIS WAS MISSING */
     case "TOGGLE_CRITIQUE_CATEGORY": {
       const value: CritiqueCategory = action.value;
       const exists = state.activeCritiqueCategories.includes(value);
@@ -73,26 +71,40 @@ export function reflectionReducer(
     case "SET_REFLECTION_RESULT":
       return {
         ...state,
-        generatedOptions: action.payload.options,
-        critiques: action.payload.critiques.map((c: CritiqueItem) => ({
-          ...c,
-          category: c.category.replace(/_/g, "-").toLowerCase(),
-        })),
-        improvements: action.payload.improvements,
-        changeInstructions: action.payload.changeInstructions,
+        generatedOptions:
+          action.payload.options ?? state.generatedOptions,
+
+        critiques: action.payload.critiques
+          ? action.payload.critiques.map((c: CritiqueItem) => ({
+              ...c,
+              category: c.category.replace(/_/g, "-").toLowerCase(),
+            }))
+          : state.critiques,
+
+        improvements:
+          action.payload.improvements &&
+          action.payload.improvements.length > 0
+            ? action.payload.improvements
+            : state.improvements,
+
+        changeInstructions:
+          action.payload.changeInstructions ??
+          state.changeInstructions,
       };
 
-    /** -----------------------------
-     *  OPTION REFINEMENT PAGE
-     * ----------------------------- */
+    /** ⭐ REFINEMENT PAGE (NO STEP CHANGE) */
     case "OPEN_REFINEMENT_PAGE":
       return {
         ...state,
         isRefinementPageOpen: true,
         optionBeingRefined: action.option,
         refinedOptionDraft: null,
-        refinementChat: [],
-        currentStep: 3,
+        refinementChat: [
+          {
+            role: "assistant",
+            content: "What would you like to improve or explore?",
+          },
+        ],
       };
 
     case "CLOSE_REFINEMENT_PAGE":
@@ -102,7 +114,6 @@ export function reflectionReducer(
         optionBeingRefined: null,
         refinedOptionDraft: null,
         refinementChat: [],
-        currentStep: 2,
       };
 
     case "SET_REFINED_OPTION_DRAFT":
@@ -118,12 +129,9 @@ export function reflectionReducer(
         optionBeingRefined: null,
         refinedOptionDraft: null,
         refinementChat: [],
-        currentStep: 2,
       };
 
-    /** -----------------------------
-     *  CRITIQUE CHAT PAGE
-     * ----------------------------- */
+    /** ⭐ CRITIQUE CHAT (NO STEP CHANGE) */
     case "OPEN_CRITIQUE_CHAT":
       return {
         ...state,
@@ -131,7 +139,6 @@ export function reflectionReducer(
         critiqueBeingDiscussed: action.critique,
         critiqueChat: [],
         refinedCritiqueSuggestion: null,
-        currentStep: 4,
       };
 
     case "CLOSE_CRITIQUE_CHAT":
@@ -141,7 +148,6 @@ export function reflectionReducer(
         critiqueBeingDiscussed: null,
         critiqueChat: [],
         refinedCritiqueSuggestion: null,
-        currentStep: 3,
       };
 
     case "ADD_CRITIQUE_CHAT_MESSAGE":
@@ -156,15 +162,31 @@ export function reflectionReducer(
         refinedCritiqueSuggestion: action.value,
       };
 
-    /** ----------------------------- */
-
+    /** IMPROVEMENTS */
     case "ADD_IMPROVEMENT":
+      if (!action.text) return state;
       return {
         ...state,
         improvements: [
           ...state.improvements,
           { id: uuid(), text: action.text, applied: false },
         ],
+      };
+
+    case "TOGGLE_IMPROVEMENT_APPLIED":
+      return {
+        ...state,
+        improvements: state.improvements.map((imp) =>
+          imp.id === action.id
+            ? { ...imp, applied: !imp.applied }
+            : imp
+        ),
+      };
+
+    case "ADD_REFINEMENT_MESSAGE":
+      return {
+        ...state,
+        refinementChat: [...state.refinementChat, action.message],
       };
 
     case "REMOVE_CRITIQUE":

@@ -12,7 +12,8 @@ export function RefineOptionStep() {
   const option: OptionCard | null =
     state.refinedOptionDraft || state.optionBeingRefined;
 
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const messages = state.refinementChat;
+
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -25,12 +26,16 @@ export function RefineOptionStep() {
   const handleSend = async () => {
     if (!input.trim()) return;
 
-    const nextMessages: ChatMessage[] = [
-      ...messages,
-      { role: "user", content: input.trim() },
-    ];
+    const userMessage: ChatMessage = {
+      role: "user",
+      content: input.trim(),
+    };
 
-    setMessages(nextMessages);
+    dispatch({
+      type: "ADD_REFINEMENT_MESSAGE",
+      message: userMessage,
+    });
+
     setInput("");
     setIsLoading(true);
 
@@ -45,16 +50,21 @@ export function RefineOptionStep() {
           designStage: state.designStage,
           contextSelection: state.contextSelection,
           option,
-          messages: nextMessages,
+          messages: [...messages, userMessage],
         }),
       });
 
       const data = await res.json();
 
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: data.assistantMessage || "" },
-      ]);
+      dispatch({
+        type: "ADD_REFINEMENT_MESSAGE",
+        message: {
+          role: "assistant",
+          content:
+            data.assistantMessage ||
+            "I’ve refined this option based on your input.",
+        },
+      });
 
       if (data.refinedOption) {
         dispatch({
@@ -62,6 +72,14 @@ export function RefineOptionStep() {
           option: data.refinedOption,
         });
       }
+    } catch (err) {
+      dispatch({
+        type: "ADD_REFINEMENT_MESSAGE",
+        message: {
+          role: "assistant",
+          content: "Something went wrong. Try again.",
+        },
+      });
     } finally {
       setIsLoading(false);
     }
@@ -112,8 +130,7 @@ export function RefineOptionStep() {
       <div className="flex-1 flex flex-col gap-2 overflow-y-auto panel-scroll mb-3">
         {messages.length === 0 && (
           <p className="text-[11px] text-muted-foreground">
-            Ask the AI to critique, improve, or explore variations of this
-            option before you select it.
+            What would you like to improve or explore about this option?
           </p>
         )}
 

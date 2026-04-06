@@ -16,6 +16,16 @@ import { TraceStep } from "../components/steps/TraceStep";
 function CurrentStep() {
   const { state } = useReflection();
 
+  /** ⭐ PRIORITY SCREENS (overlays) */
+  if (state.isRefinementPageOpen) {
+    return <RefineOptionStep />;
+  }
+
+  if (state.isCritiqueChatOpen) {
+    return <CritiqueChatStep />;
+  }
+
+  /** ⭐ MAIN STEP FLOW (6 steps total) */
   switch (state.currentStep) {
     case 0:
       return <IntentStep />;
@@ -26,10 +36,8 @@ function CurrentStep() {
     case 3:
       return <CritiqueStep />;
     case 4:
-      return <CritiqueChatStep />;
-    case 5:
       return <ApplyStep />;
-    case 6:
+    case 5:
       return <TraceStep />;
     default:
       return <IntentStep />;
@@ -41,7 +49,6 @@ function InnerApp() {
 
   return (
     <PluginShell>
-      {/* Key forces remount + smooth transitions */}
       <div key={state.currentStep}>
         <CurrentStep />
       </div>

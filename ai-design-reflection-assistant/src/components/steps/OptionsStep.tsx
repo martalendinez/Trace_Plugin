@@ -50,7 +50,7 @@ export function OptionsStep() {
     <div className="p-6 space-y-6 h-full">
       <div className="space-y-1">
         <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-          STEP 3 OF 7
+          STEP 3 OF 6
         </p>
 
         <h3 className="text-sm font-semibold text-foreground">
