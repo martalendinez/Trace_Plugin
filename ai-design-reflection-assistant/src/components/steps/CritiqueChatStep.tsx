@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { useReflection } from "../../features/reflection/state/ReflectionContext";
-import type { ChatMessage, CritiqueItem } from "../../features/reflection/types";
+import type { ChatMessage } from "../../features/reflection/types";
 
 const API = "http://localhost:3001";
 
@@ -27,6 +27,9 @@ export function CritiqueChatStep() {
       content: input.trim(),
     };
 
+    // ⭐ FIX: Build nextMessages BEFORE dispatch
+    const nextMessages = [...state.critiqueChat, userMessage];
+
     dispatch({
       type: "ADD_CRITIQUE_CHAT_MESSAGE",
       message: userMessage,
@@ -41,7 +44,7 @@ export function CritiqueChatStep() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           critique,
-          messages: [...state.critiqueChat, userMessage],
+          messages: nextMessages, // ⭐ FIXED
           goal: state.goal,
           audience: state.audience,
           productContext: state.productContext,
@@ -54,7 +57,7 @@ export function CritiqueChatStep() {
 
       const assistantMessage: ChatMessage = {
         role: "assistant",
-        content: data.assistantMessage || "",
+        content: data.assistantMessage || "I’m thinking about this critique…",
       };
 
       dispatch({
