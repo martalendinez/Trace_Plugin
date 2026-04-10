@@ -31,6 +31,8 @@ export function reflectionReducer(
         currentStep: Math.max(state.currentStep - 1, 0),
       };
 
+    /* DESIGN STAGE + CONTEXT */
+
     case "TOGGLE_STAGE": {
       const value: DesignStage = action.value;
       const exists = state.designStage.includes(value);
@@ -53,6 +55,8 @@ export function reflectionReducer(
       };
     }
 
+    /* CRITIQUE CATEGORY FILTERING */
+
     case "TOGGLE_CRITIQUE_CATEGORY": {
       const value: CritiqueCategory = action.value;
       const exists = state.activeCritiqueCategories.includes(value);
@@ -64,6 +68,8 @@ export function reflectionReducer(
           : [...state.activeCritiqueCategories, value],
       };
     }
+
+    /* OPTION SELECTION + REFLECTION RESULT */
 
     case "SELECT_OPTION":
       return { ...state, selectedOptionId: action.value };
@@ -92,7 +98,8 @@ export function reflectionReducer(
           state.changeInstructions,
       };
 
-    /** ⭐ REFINEMENT PAGE (NO STEP CHANGE) */
+    /* OPTION REFINEMENT FLOW */
+
     case "OPEN_REFINEMENT_PAGE":
       return {
         ...state,
@@ -119,19 +126,30 @@ export function reflectionReducer(
     case "SET_REFINED_OPTION_DRAFT":
       return { ...state, refinedOptionDraft: action.option };
 
-    case "APPLY_REFINED_OPTION":
+    case "APPLY_REFINED_OPTION": {
+      if (!state.optionBeingRefined || !action.option) return state;
+
+      const base = state.optionBeingRefined;
+      const refined: OptionCard = {
+        ...action.option,
+        // 🔐 keep the original id so replacement works
+        id: base.id,
+      };
+
       return {
         ...state,
         generatedOptions: state.generatedOptions.map((o) =>
-          o.id === action.option.id ? action.option : o
+          o.id === base.id ? refined : o
         ),
+        optionBeingRefined: refined,
         isRefinementPageOpen: false,
-        optionBeingRefined: null,
         refinedOptionDraft: null,
         refinementChat: [],
       };
+    }
 
-    /** ⭐ CRITIQUE CHAT (NO STEP CHANGE) */
+    /* CRITIQUE CHAT FLOW */
+
     case "OPEN_CRITIQUE_CHAT":
       return {
         ...state,
@@ -162,7 +180,8 @@ export function reflectionReducer(
         refinedCritiqueSuggestion: action.value,
       };
 
-    /** IMPROVEMENTS */
+    /* IMPROVEMENTS + APPLY STEP */
+
     case "ADD_IMPROVEMENT":
       if (!action.text) return state;
       return {
