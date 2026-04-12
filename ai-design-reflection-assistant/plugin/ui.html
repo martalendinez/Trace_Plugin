@@ -1,16 +1,30 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-  <body style="font-family: system-ui; padding: 12px;">
-    <h3>UX Reflection Assistant</h3>
-    <p id="status">Waiting for plugin…</p>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Plugin UI</title>
+
+    <link rel="stylesheet" href="./dist/index.css" />
 
     <script>
-      window.onmessage = (event) => {
-        const msg = event.data.pluginMessage;
-        if (msg?.type === "INIT") {
-          document.getElementById("status").textContent = msg.message;
-        }
-      };
+      console.log("🔥 UI HTML LOADED");
+    </script>
+  </head>
+
+  <body>
+    <div id="root"></div>
+
+    <!-- IMPORTANT: load JS directly, no assets/ folder -->
+    <script>
+      console.log("🚀 loading bundle");
+
+      const script = document.createElement("script");
+      script.src = "./dist/index.js";
+
+      script.onload = () => console.log("✅ bundle loaded");
+      script.onerror = () => console.error("❌ bundle failed");
+
+      document.body.appendChild(script);
     </script>
   </body>
 </html>
