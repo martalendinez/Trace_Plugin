@@ -8,7 +8,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "strict": true,
-    "types": ["vite/client"],
+    "types": ["vite/client", "@figma/plugin-typings"],
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
@@ -17,8 +17,7 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    "erasableSyntaxOnly": true,
-    
+    "erasableSyntaxOnly": true
   },
-  "include": ["src"]
+  "include": ["src", "plugin"]
 }

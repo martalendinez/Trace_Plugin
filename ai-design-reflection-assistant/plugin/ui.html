@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+  <body style="font-family: system-ui; padding: 12px;">
+    <h3>UX Reflection Assistant</h3>
+    <p id="status">Waiting for plugin…</p>
+
+    <script>
+      window.onmessage = (event) => {
+        const msg = event.data.pluginMessage;
+        if (msg?.type === "INIT") {
+          document.getElementById("status").textContent = msg.message;
+        }
+      };
+    </script>
+  </body>
+</html>
