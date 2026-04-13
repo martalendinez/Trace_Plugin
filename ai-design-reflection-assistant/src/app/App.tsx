@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { PluginShell } from "../components/layout/PluginShell";
 import {
   ReflectionProvider,
@@ -16,16 +17,9 @@ import { TraceStep } from "../components/steps/TraceStep";
 function CurrentStep() {
   const { state } = useReflection();
 
-  /** ⭐ PRIORITY SCREENS (overlays) */
-  if (state.isRefinementPageOpen) {
-    return <RefineOptionStep />;
-  }
+  if (state.isRefinementPageOpen) return <RefineOptionStep />;
+  if (state.isCritiqueChatOpen) return <CritiqueChatStep />;
 
-  if (state.isCritiqueChatOpen) {
-    return <CritiqueChatStep />;
-  }
-
-  /** ⭐ MAIN STEP FLOW (6 steps total) */
   switch (state.currentStep) {
     case 0:
       return <IntentStep />;
@@ -45,7 +39,41 @@ function CurrentStep() {
 }
 
 function InnerApp() {
-  const { state } = useReflection();
+  const { dispatch, state } = useReflection();
+
+  // ⭐ Listen for messages from Figma (selection updates)
+  useEffect(() => {
+    window.onmessage = (event) => {
+      const msg = event.data?.pluginMessage;
+      if (!msg) return;
+
+      if (msg.type === "SELECTION_CHANGED") {
+        const payload = msg.payload;
+
+        if (!payload) {
+          dispatch({
+            type: "SET_FIELD",
+            field: "selectedElement",
+            value: "",
+          });
+          return;
+        }
+
+        dispatch({
+          type: "SET_FIELD",
+          field: "selectedElement",
+          value: payload.name ?? "",
+        });
+
+        // Optional: store ID for future canvas updates
+        dispatch({
+          type: "SET_FIELD",
+          field: "selectedElementId",
+          value: payload.id,
+        });
+      }
+    };
+  }, [dispatch]);
 
   return (
     <PluginShell>
