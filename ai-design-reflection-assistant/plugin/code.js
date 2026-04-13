@@ -1,2 +1,3 @@
-figma.showUI(__html__, { width: 360, height: 480 });
+figma.showUI(__html__, { width: 380, height: 600 });
 figma.ui.postMessage({ type: "INIT", message: "Plugin loaded ✅" });
+
