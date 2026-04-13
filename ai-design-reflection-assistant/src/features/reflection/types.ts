@@ -25,12 +25,15 @@ export type DesignStage =
   | "early-concept"
   | "high-fidelity";
 
+/* ⭐ UPDATED: Figma-native context items */
 export type ContextItem =
   | "selected-ui"
-  | "button-labels"
-  | "input-fields"
-  | "user-research"
-  | "internal-docs";
+  | "text-content"
+  | "component-structure"
+  | "style-tokens"
+  | "accessibility"
+  | "interactions"
+  | "images-icons";
 
 /* -----------------------------
    OPTIONS
@@ -99,6 +102,7 @@ export interface ReflectionState {
   maxSteps: number;
 
   selectedElement: string;
+  selectedElementId?: string; // ⭐ added earlier for Figma selection
   productContext: string;
 
   goalNotes: string;
@@ -110,6 +114,9 @@ export interface ReflectionState {
 
   designStage: DesignStage[];
   contextSelection: ContextItem[];
+
+  /* ⭐ NEW: extracted Figma context */
+  extractedContext?: any | null;
 
   generatedOptions: OptionCard[];
   selectedOptionId: string | null;

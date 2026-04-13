@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Check, AlertTriangle } from "lucide-react";
+import { Check } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useReflection } from "../../features/reflection/state/ReflectionContext";
 import type { ContextItem, DesignStage } from "../../features/reflection/types";
@@ -11,12 +11,14 @@ const DESIGN_STAGES: { value: DesignStage; label: string }[] = [
   { value: "high-fidelity", label: "High fidelity" },
 ];
 
-const CONTEXT_OPTIONS: { value: ContextItem; label: string; sensitive?: boolean }[] = [
-  { value: "selected-ui", label: "Selected UI frame" },
-  { value: "button-labels", label: "Button labels" },
-  { value: "input-fields", label: "Input fields" },
-  { value: "user-research", label: "User research", sensitive: true },
-  { value: "internal-docs", label: "Internal documentation", sensitive: true },
+const CONTEXT_OPTIONS: { value: ContextItem; label: string }[] = [
+  { value: "selected-ui", label: "Selected frame" },
+  { value: "text-content", label: "Text content" },
+  { value: "component-structure", label: "Component structure" },
+  { value: "style-tokens", label: "Color & style tokens" },
+  { value: "accessibility", label: "Accessibility checks" },
+  { value: "interactions", label: "Prototype interactions" },
+  { value: "images-icons", label: "Images & icons" },
 ];
 
 const Field = ({
@@ -29,9 +31,7 @@ const Field = ({
   children: React.ReactNode;
 }) => (
   <div className="space-y-1.5">
-    <label className="text-xs font-medium text-foreground block">
-      {label}
-    </label>
+    <label className="text-xs font-medium text-foreground block">{label}</label>
     {children}
     {helper && (
       <p className="text-[11px] text-muted-foreground">{helper}</p>
@@ -42,12 +42,10 @@ const Field = ({
 const CheckboxChip = ({
   label,
   checked,
-  sensitive,
   onToggle,
 }: {
   label: string;
   checked: boolean;
-  sensitive?: boolean;
   onToggle: () => void;
 }) => (
   <button
@@ -69,13 +67,6 @@ const CheckboxChip = ({
     </div>
 
     <span className="flex-1">{label}</span>
-
-    {sensitive && (
-      <span className="flex items-center gap-1 text-[10px] text-amber-600 font-medium">
-        <AlertTriangle className="w-3 h-3" />
-        sensitive
-      </span>
-    )}
   </button>
 );
 
@@ -169,7 +160,7 @@ export function ContextStep() {
       {/* CONTEXT OPTIONS */}
       <Field
         label="What information should the AI use?"
-        helper="This simulates what the AI has access to (e.g., from Figma or documents)."
+        helper="Choose what the AI can extract from your selected frame."
       >
         <div className="space-y-1.5">
           {CONTEXT_OPTIONS.map((item) => (
@@ -177,7 +168,6 @@ export function ContextStep() {
               key={item.value}
               label={item.label}
               checked={state.contextSelection.includes(item.value)}
-              sensitive={item.sensitive}
               onToggle={() => toggleContext(item.value)}
             />
           ))}
@@ -201,6 +191,18 @@ export function ContextStep() {
         />
       </Field>
 
+      {/* DEBUG VIEWER */}
+      {state.extractedContext && (
+        <div className="mt-4 p-3 bg-muted rounded-lg border border-border">
+          <p className="text-[10px] font-medium text-muted-foreground mb-1">
+            Extracted Context (debug)
+          </p>
+          <pre className="text-[10px] whitespace-pre-wrap text-muted-foreground max-h-48 overflow-auto">
+            {JSON.stringify(state.extractedContext, null, 2)}
+          </pre>
+        </div>
+      )}
+
       {/* ACTIONS */}
       <div className="flex gap-2 pt-2">
         <button
@@ -212,7 +214,20 @@ export function ContextStep() {
 
         <button
           disabled={!canContinue}
-          onClick={() => dispatch({ type: "NEXT_STEP" })}
+          onClick={() => {
+            parent.postMessage(
+              {
+                pluginMessage: {
+                  type: "REQUEST_CONTEXT",
+                  selectionId: state.selectedElementId,
+                  contextSelection: state.contextSelection,
+                },
+              },
+              "*"
+            );
+
+            dispatch({ type: "NEXT_STEP" });
+          }}
           className={cn(
             "flex-1 py-2.5 rounded-lg text-xs font-medium transition-all",
             canContinue

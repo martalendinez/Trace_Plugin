@@ -41,12 +41,12 @@ function CurrentStep() {
 function InnerApp() {
   const { dispatch, state } = useReflection();
 
-  // ⭐ Listen for messages from Figma (selection updates)
   useEffect(() => {
     window.onmessage = (event) => {
       const msg = event.data?.pluginMessage;
       if (!msg) return;
 
+      // Selection updates
       if (msg.type === "SELECTION_CHANGED") {
         const payload = msg.payload;
 
@@ -65,11 +65,19 @@ function InnerApp() {
           value: payload.name ?? "",
         });
 
-        // Optional: store ID for future canvas updates
         dispatch({
           type: "SET_FIELD",
           field: "selectedElementId",
           value: payload.id,
+        });
+      }
+
+      // Context extraction results
+      if (msg.type === "CONTEXT_RESULT") {
+        dispatch({
+          type: "SET_FIELD",
+          field: "extractedContext",
+          value: msg.payload,
         });
       }
     };
