@@ -51,6 +51,9 @@ export function RefineOptionStep() {
           contextSelection: state.contextSelection,
           option,
           messages: [...messages, userMessage],
+
+          // ⭐ NEW — send extracted Figma design context
+          designContext: state.extractedContext?.designContext || null,
         }),
       });
 

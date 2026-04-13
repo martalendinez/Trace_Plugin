@@ -146,7 +146,6 @@ const CATEGORIES: { value: CritiqueCategory; label: string }[] = [
   { value: "usability", label: "Usability" },
 ];
 
-// ⭐ Normalizer to fix backend category mismatches
 const normalize = (str: string) =>
   str.replace(/_/g, "-").toLowerCase();
 
@@ -170,11 +169,13 @@ export function CritiqueStep() {
         designStage: state.designStage,
         contextSelection: state.contextSelection,
         selectedOption,
+
+        // ⭐ NEW — include extracted Figma design context
+        designContext: state.extractedContext?.designContext || null,
       };
 
       const result = await callReflectApi(payload);
 
-      // ⭐ Normalize categories here too
       result.critiques = result.critiques.map((c: CritiqueItem) => ({
         ...c,
         category: normalize(c.category),
@@ -191,7 +192,6 @@ export function CritiqueStep() {
     runCritique();
   }, [state.selectedOptionId]);
 
-  // ⭐ FIXED FILTERING
   const filteredCritiques =
     state.activeCritiqueCategories.length === 0
       ? state.critiques

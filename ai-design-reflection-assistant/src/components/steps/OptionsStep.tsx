@@ -19,6 +19,9 @@ export function OptionsStep() {
         productContext: state.productContext,
         designStage: state.designStage,
         contextSelection: state.contextSelection,
+
+        // ⭐ NEW: send extracted Figma context to backend
+        designContext: state.extractedContext?.designContext || null,
       }),
     });
 

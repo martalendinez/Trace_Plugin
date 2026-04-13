@@ -27,7 +27,6 @@ export function CritiqueChatStep() {
       content: input.trim(),
     };
 
-    // ⭐ FIX: Build nextMessages BEFORE dispatch
     const nextMessages = [...state.critiqueChat, userMessage];
 
     dispatch({
@@ -44,12 +43,15 @@ export function CritiqueChatStep() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           critique,
-          messages: nextMessages, // ⭐ FIXED
+          messages: nextMessages,
           goal: state.goal,
           audience: state.audience,
           productContext: state.productContext,
           designStage: state.designStage,
           contextSelection: state.contextSelection,
+
+          // ⭐ NEW — include extracted Figma design context
+          designContext: state.extractedContext?.designContext || null,
         }),
       });
 
@@ -57,7 +59,9 @@ export function CritiqueChatStep() {
 
       const assistantMessage: ChatMessage = {
         role: "assistant",
-        content: data.assistantMessage || "I’m thinking about this critique…",
+        content:
+          data.assistantMessage ||
+          "I’m thinking about this critique…",
       };
 
       dispatch({

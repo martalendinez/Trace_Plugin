@@ -4,6 +4,9 @@ import crypto from "crypto";
 
 const router = Router();
 
+/* -------------------------------------------------------
+   DESIGN STAGE BEHAVIOR
+-------------------------------------------------------- */
 const buildDesignStageBehavior = (designStage: string[]) => `
 Design stage behavior rules:
 
@@ -34,7 +37,7 @@ ${designStage.join(", ")}
 `;
 
 /* -------------------------------------------------------
-   MAIN REFLECTION ENDPOINT
+   MAIN REFLECTION ENDPOINT (CRITIQUES + IMPROVEMENTS)
 -------------------------------------------------------- */
 router.post("/", async (req, res) => {
   try {
@@ -46,6 +49,7 @@ router.post("/", async (req, res) => {
       productContext,
       designStage = [],
       contextSelection = [],
+      designContext = null,   // ⭐ NEW
       selectedOption,
       activeCritiqueCategories = [],
     } = req.body;
@@ -61,6 +65,9 @@ You are a senior UX design assistant.
 Return STRICT JSON. No markdown. No commentary.
 
 ${buildDesignStageBehavior(designStage)}
+
+Use the following extracted Figma design context to inform your critiques:
+${designContext ? JSON.stringify(designContext, null, 2) : "None"}
 
 CRITIQUES MUST:
 - Be based on the selected option
@@ -184,14 +191,20 @@ Return JSON EXACTLY like this:
 });
 
 /* -------------------------------------------------------
-   OPTIONS-ONLY ENDPOINT
+   OPTIONS-ONLY ENDPOINT (USES DESIGN CONTEXT)
 -------------------------------------------------------- */
 router.post("/options", async (req, res) => {
   try {
     const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-    const { goal, audience, productContext, designStage = [], contextSelection = [] } =
-      req.body;
+    const {
+      goal,
+      audience,
+      productContext,
+      designStage = [],
+      contextSelection = [],
+      designContext = null,   // ⭐ NEW
+    } = req.body;
 
     const prompt = `
 You are a senior UX design assistant.
@@ -199,6 +212,9 @@ You are a senior UX design assistant.
 Return STRICT JSON. No markdown. No commentary.
 
 ${buildDesignStageBehavior(designStage)}
+
+Use the following extracted Figma design context to inform your options:
+${designContext ? JSON.stringify(designContext, null, 2) : "None"}
 
 Generate ONLY the "options" array. STRICT JSON.
 
@@ -256,7 +272,7 @@ Context selection: ${contextSelection.join(", ")}
 });
 
 /* -------------------------------------------------------
-   OPTION REFINEMENT ENDPOINT
+   OPTION REFINEMENT ENDPOINT (USES DESIGN CONTEXT)
 -------------------------------------------------------- */
 router.post("/refine-option", async (req, res) => {
   try {
@@ -268,6 +284,7 @@ router.post("/refine-option", async (req, res) => {
       productContext,
       designStage = [],
       contextSelection = [],
+      designContext = null,   // ⭐ NEW
       option,
       messages = [],
     } = req.body;
@@ -278,6 +295,9 @@ You are a senior UX design assistant helping refine a single design option.
 Return STRICT JSON. No markdown. No commentary.
 
 ${buildDesignStageBehavior(designStage)}
+
+Use the following extracted Figma design context to inform your refinement:
+${designContext ? JSON.stringify(designContext, null, 2) : "None"}
 
 You will receive:
 - The current option
@@ -341,7 +361,7 @@ Context selection: ${contextSelection.join(", ")}
 });
 
 /* -------------------------------------------------------
-   CRITIQUE DISCUSSION ENDPOINT
+   CRITIQUE DISCUSSION ENDPOINT (USES DESIGN CONTEXT)
 -------------------------------------------------------- */
 router.post("/discuss-critique", async (req, res) => {
   try {
@@ -355,6 +375,7 @@ router.post("/discuss-critique", async (req, res) => {
       productContext,
       designStage = [],
       contextSelection = [],
+      designContext = null,   // ⭐ NEW
     } = req.body;
 
     const prompt = `
@@ -363,6 +384,9 @@ You are a senior UX design assistant helping discuss a critique.
 Return STRICT JSON. No markdown. No commentary.
 
 ${buildDesignStageBehavior(designStage)}
+
+Use the following extracted Figma design context to inform your discussion:
+${designContext ? JSON.stringify(designContext, null, 2) : "None"}
 
 You will receive:
 - The critique

@@ -1,10 +1,11 @@
-import { critiqueLibrary } from "../data/critiqueRules";
-import type { CritiqueCategory, CritiqueItem } from "../types";
+// generateCritiques.ts
+// This file is now deprecated because critiques come from the backend.
+// Keeping it for compatibility, but it returns an empty array.
+
+import type { CritiqueItem, CritiqueCategory } from "../types";
 
 export function generateCritiques(
-  activeCategories: CritiqueCategory[]
+  _activeCategories: CritiqueCategory[]
 ): CritiqueItem[] {
-  return critiqueLibrary.filter((item) =>
-    activeCategories.includes(item.category)
-  );
+  return [];
 }
