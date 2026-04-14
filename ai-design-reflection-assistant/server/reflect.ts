@@ -37,7 +37,7 @@ ${designStage.join(", ")}
 `;
 
 /* -------------------------------------------------------
-   MAIN REFLECTION ENDPOINT (CRITIQUES + IMPROVEMENTS)
+   MAIN ENDPOINT
 -------------------------------------------------------- */
 router.post("/", async (req, res) => {
   try {
@@ -49,7 +49,7 @@ router.post("/", async (req, res) => {
       productContext,
       designStage = [],
       contextSelection = [],
-      designContext = null,   // ⭐ NEW
+      designContext = null,
       selectedOption,
       activeCritiqueCategories = [],
     } = req.body;
@@ -124,19 +124,18 @@ Return JSON EXACTLY like this:
           category: activeCritiqueCategories[0] || "usability",
           title: c,
           concern: c,
-          suggestion: "Consider refining this aspect for clarity.",
-          uncertaintyNote: "This critique may not apply in all contexts.",
+          suggestion: "Consider refining this aspect.",
+          uncertaintyNote: "May not apply in all contexts.",
         };
       }
 
       return {
         id: c.id || crypto.randomUUID(),
-        category: c.category || activeCritiqueCategories[0] || "usability",
+        category: c.category || "usability",
         title: c.title || "Potential issue",
         concern: c.concern || "",
         suggestion: c.suggestion || "",
-        uncertaintyNote:
-          c.uncertaintyNote || "This critique may not apply in all contexts.",
+        uncertaintyNote: c.uncertaintyNote || "",
       };
     });
 
@@ -148,40 +147,19 @@ Return JSON EXACTLY like this:
       })
     );
 
-    const normalizedChangeInstructions = (data.changeInstructions || [])
-      .map((ci: any) => {
-        if (!ci || typeof ci !== "object") return null;
-
-        if (ci.type === "update_text") {
-          return {
-            type: "update_text",
-            nodeId: ci.nodeId || "",
-            value: ci.value || "",
-          };
-        }
-        if (ci.type === "change_color") {
-          return {
-            type: "change_color",
-            nodeId: ci.nodeId || "",
-            color: ci.color || "#000000",
-          };
-        }
-        if (ci.type === "resize_node") {
-          return {
-            type: "resize_node",
-            nodeId: ci.nodeId || "",
-            width: Number(ci.width) || 0,
-            height: Number(ci.height) || 0,
-          };
-        }
-        return null;
-      })
-      .filter(Boolean);
+    const fallbackImprovements = normalizedCritiques.map((c: any) => ({
+      id: crypto.randomUUID(),
+      text: c.suggestion,
+      applied: false,
+    }));
 
     return res.json({
       critiques: normalizedCritiques,
-      improvements: normalizedImprovements,
-      changeInstructions: normalizedChangeInstructions,
+      improvements:
+        normalizedImprovements.length > 0
+          ? normalizedImprovements
+          : fallbackImprovements, // ⭐ IMPORTANT FIX
+      changeInstructions: [],
       options: data.options || [],
     });
   } catch (err) {
@@ -191,7 +169,7 @@ Return JSON EXACTLY like this:
 });
 
 /* -------------------------------------------------------
-   OPTIONS-ONLY ENDPOINT (USES DESIGN CONTEXT)
+   OPTIONS ENDPOINT (FULL FIXED)
 -------------------------------------------------------- */
 router.post("/options", async (req, res) => {
   try {
@@ -203,20 +181,17 @@ router.post("/options", async (req, res) => {
       productContext,
       designStage = [],
       contextSelection = [],
-      designContext = null,   // ⭐ NEW
+      designContext = null,
     } = req.body;
 
     const prompt = `
 You are a senior UX design assistant.
 
-Return STRICT JSON. No markdown. No commentary.
+Return STRICT JSON. No markdown.
 
 ${buildDesignStageBehavior(designStage)}
 
-Use the following extracted Figma design context to inform your options:
-${designContext ? JSON.stringify(designContext, null, 2) : "None"}
-
-Generate ONLY the "options" array. STRICT JSON.
+Generate ONLY options.
 
 {
   "options": [
@@ -232,18 +207,13 @@ Generate ONLY the "options" array. STRICT JSON.
     }
   ]
 }
-
-Goal: ${goal}
-Audience: ${audience}
-Product context: ${productContext}
-Context selection: ${contextSelection.join(", ")}
 `;
 
     const completion = await client.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: "You are a UX design expert." },
+        { role: "system", content: "You are a UX expert." },
         { role: "user", content: prompt },
       ],
     });
@@ -253,18 +223,34 @@ Context selection: ${contextSelection.join(", ")}
 
     const normalizedOptions = (data.options || []).map((o: any) => ({
       id: o.id || crypto.randomUUID(),
-      title: o.title || "Untitled option",
+      title: o.title || "Untitled",
       summary: o.summary || "",
       problem: o.problem || "",
       assumption: o.assumption || "",
       principle: o.principle || "",
       tradeoff: o.tradeoff || "",
-      suggestedChanges: Array.isArray(o.suggestedChanges)
-        ? o.suggestedChanges
-        : [],
+      suggestedChanges: o.suggestedChanges || [],
     }));
 
-    return res.json({ options: normalizedOptions });
+    const improvements = normalizedOptions.flatMap((o: any) => [
+      {
+        id: crypto.randomUUID(),
+        text: o.problem ? `Fix: ${o.problem}` : "",
+        applied: false,
+      },
+      {
+        id: crypto.randomUUID(),
+        text: o.tradeoff ? `Tradeoff: ${o.tradeoff}` : "",
+        applied: false,
+      },
+    ]).filter(i => i.text);
+
+    return res.json({
+      options: normalizedOptions,
+      improvements,
+      critiques: [],
+      changeInstructions: [],
+    });
   } catch (err) {
     console.error("Error in /api/reflect/options:", err);
     return res.status(500).json({ error: "Failed to generate options" });
@@ -272,7 +258,7 @@ Context selection: ${contextSelection.join(", ")}
 });
 
 /* -------------------------------------------------------
-   OPTION REFINEMENT ENDPOINT (USES DESIGN CONTEXT)
+   REFINE OPTION
 -------------------------------------------------------- */
 router.post("/refine-option", async (req, res) => {
   try {
@@ -283,66 +269,36 @@ router.post("/refine-option", async (req, res) => {
       audience,
       productContext,
       designStage = [],
-      contextSelection = [],
-      designContext = null,   // ⭐ NEW
+      designContext = null,
       option,
       messages = [],
     } = req.body;
 
     const prompt = `
-You are a senior UX design assistant helping refine a single design option.
+You refine UX options.
 
-Return STRICT JSON. No markdown. No commentary.
+Return STRICT JSON.
 
 ${buildDesignStageBehavior(designStage)}
 
-Use the following extracted Figma design context to inform your refinement:
-${designContext ? JSON.stringify(designContext, null, 2) : "None"}
-
-You will receive:
-- The current option
-- The conversation so far
-- The latest user message
-
-You MUST:
-- Respond as the AI in the conversation
-- Optionally propose a refined version of the option
-
-Return JSON EXACTLY like this:
-
-{
-  "assistantMessage": "your reply to the user",
-  "refinedOption": {
-    "id": "string",
-    "title": "short option name",
-    "summary": "1–2 sentence summary",
-    "problem": "what problem this option addresses",
-    "assumption": "key assumption",
-    "principle": "design principle",
-    "tradeoff": "main trade-off",
-    "suggestedChanges": []
-  }
-}
-
-If you do NOT want to change the option, set "refinedOption" to null.
-
-Current option:
+Option:
 ${JSON.stringify(option, null, 2)}
 
-Conversation so far:
+Messages:
 ${JSON.stringify(messages, null, 2)}
 
-Goal: ${goal}
-Audience: ${audience}
-Product context: ${productContext}
-Context selection: ${contextSelection.join(", ")}
+Return:
+{
+  "assistantMessage": "",
+  "refinedOption": null
+}
 `;
 
     const completion = await client.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: "You are a precise UX design expert." },
+        { role: "system", content: "Return JSON only." },
         { role: "user", content: prompt },
       ],
     });
@@ -355,13 +311,13 @@ Context selection: ${contextSelection.join(", ")}
       refinedOption: data.refinedOption || null,
     });
   } catch (err) {
-    console.error("Error in /api/reflect/refine-option:", err);
+    console.error("Error in /refine-option:", err);
     return res.status(500).json({ error: "Failed to refine option" });
   }
 });
 
 /* -------------------------------------------------------
-   CRITIQUE DISCUSSION ENDPOINT (USES DESIGN CONTEXT)
+   DISCUSS CRITIQUE
 -------------------------------------------------------- */
 router.post("/discuss-critique", async (req, res) => {
   try {
@@ -374,82 +330,44 @@ router.post("/discuss-critique", async (req, res) => {
       audience,
       productContext,
       designStage = [],
-      contextSelection = [],
-      designContext = null,   // ⭐ NEW
+      designContext = null,
     } = req.body;
 
     const prompt = `
-You are a senior UX design assistant helping discuss a critique.
-
-Return STRICT JSON. No markdown. No commentary.
-
-${buildDesignStageBehavior(designStage)}
-
-Use the following extracted Figma design context to inform your discussion:
-${designContext ? JSON.stringify(designContext, null, 2) : "None"}
-
-You will receive:
-- The critique
-- The conversation so far
-- The latest user message
-
-You MUST:
-- Respond as the AI in the conversation
-- Optionally propose a refined suggestion
-
-Return JSON EXACTLY like this:
-
-{
-  "assistantMessage": "your reply to the user",
-  "refinedSuggestion": "optional refined suggestion or null"
-}
+Return JSON only.
 
 Critique:
-${JSON.stringify(critique, null, 2)}
+${JSON.stringify(critique)}
 
-Conversation so far:
-${JSON.stringify(messages, null, 2)}
+Messages:
+${JSON.stringify(messages)}
 
-Goal: ${goal}
-Audience: ${audience}
-Product context: ${productContext}
-Context selection: ${contextSelection.join(", ")}
+{
+  "assistantMessage": "",
+  "refinedSuggestion": null
+}
 `;
 
     const completion = await client.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       response_format: { type: "json_object" },
       messages: [
-        {
-          role: "system",
-          content:
-            "You MUST return valid JSON. No markdown. No commentary. No natural language outside JSON.",
-        },
+        { role: "system", content: "JSON only." },
         { role: "user", content: prompt },
       ],
     });
 
     const raw = completion.choices[0]?.message?.content || "{}";
-
-    let data;
-    try {
-      data = JSON.parse(raw);
-    } catch {
-      data = {
-        assistantMessage: raw,
-        refinedSuggestion: null,
-      };
-    }
+    const data = JSON.parse(raw);
 
     return res.json({
       assistantMessage: data.assistantMessage || "",
       refinedSuggestion: data.refinedSuggestion || null,
     });
   } catch (err) {
-    console.error("Error in /api/reflect/discuss-critique:", err);
+    console.error("Error:", err);
     return res.json({
-      assistantMessage:
-        "Something went wrong while discussing this critique.",
+      assistantMessage: "Error occurred",
       refinedSuggestion: null,
     });
   }

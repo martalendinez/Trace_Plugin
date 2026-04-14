@@ -1,3 +1,4 @@
+
 import { motion } from "framer-motion";
 import { useReflection } from "../../features/reflection/state/ReflectionContext";
 import type { OptionCard } from "../../features/reflection/types";
@@ -19,8 +20,6 @@ export function OptionsStep() {
         productContext: state.productContext,
         designStage: state.designStage,
         contextSelection: state.contextSelection,
-
-        // ⭐ NEW: send extracted Figma context to backend
         designContext: state.extractedContext?.designContext || null,
       }),
     });
@@ -30,9 +29,9 @@ export function OptionsStep() {
     dispatch({
       type: "SET_REFLECTION_RESULT",
       payload: {
-        options: data.options,
+        options: data.options || [],
         critiques: [],
-        improvements: [],
+        improvements: data.improvements || [], // ⭐ IMPORTANT FIX
         changeInstructions: [],
       },
     });
