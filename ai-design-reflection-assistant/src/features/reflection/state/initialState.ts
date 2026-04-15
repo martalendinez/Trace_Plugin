@@ -2,7 +2,10 @@ import type { ReflectionState } from "../types";
 
 export const initialReflectionState: ReflectionState = {
   currentStep: 0,
-  taskMode: "generate-ideas",
+
+  // ✅ UPDATED: must match new TaskMode
+  taskMode: "design",
+
   goal: "",
   audience: "",
   maxSteps: 7,
@@ -30,17 +33,19 @@ export const initialReflectionState: ReflectionState = {
 
   ownImprovement: "",
 
+  /* OPTION REFINEMENT */
   refinementChat: [],
   isRefinementPageOpen: false,
   optionBeingRefined: null,
   refinedOptionDraft: null,
 
-  /** NEW */
+  /* CRITIQUE CHAT */
   isCritiqueChatOpen: false,
   critiqueBeingDiscussed: null,
   critiqueChat: [],
   refinedCritiqueSuggestion: null,
 
+  /* APPLY + TRACE */
   appliedChanges: [],
   changeInstructions: [],
 

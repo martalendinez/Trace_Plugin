@@ -2,7 +2,15 @@ import { motion } from "framer-motion";
 import { Check, AlertTriangle } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useReflection } from "../../features/reflection/state/ReflectionContext";
-import type { ContextItem, DesignStage } from "../../features/reflection/types";
+import type {
+  ContextItem,
+  DesignStage,
+  TaskMode,
+} from "../../features/reflection/types";
+
+/* -----------------------------
+   DESIGN STAGES
+----------------------------- */
 
 const DESIGN_STAGES: { value: DesignStage; label: string }[] = [
   { value: "research", label: "Research" },
@@ -11,13 +19,70 @@ const DESIGN_STAGES: { value: DesignStage; label: string }[] = [
   { value: "high-fidelity", label: "High fidelity" },
 ];
 
-const CONTEXT_OPTIONS: { value: ContextItem; label: string; sensitive?: boolean }[] = [
-  { value: "selected-ui", label: "Selected UI frame" },
-  { value: "button-labels", label: "Button labels" },
-  { value: "input-fields", label: "Input fields" },
-  { value: "user-research", label: "User research", sensitive: true },
-  { value: "internal-docs", label: "Internal documentation", sensitive: true },
-];
+/* -----------------------------
+   CONTEXT CONFIG (FIXED)
+----------------------------- */
+
+const CONTEXT_BY_MODE: Record<
+  TaskMode,
+  { items: { value: ContextItem; label: string; sensitive?: boolean }[] }
+> = {
+  design: {
+    items: [
+      { value: "selected-ui", label: "UI frames / screens" },
+      { value: "button-labels", label: "Buttons & CTAs" },
+      { value: "input-fields", label: "Forms & inputs" },
+    ],
+  },
+
+  evaluation: {
+    items: [
+      { value: "selected-ui", label: "UI frame" },
+      { value: "button-labels", label: "Button labels" },
+      { value: "input-fields", label: "Input fields" },
+      { value: "internal-docs", label: "Design specs", sensitive: true },
+    ],
+  },
+
+  research: {
+    items: [
+      { value: "user-research", label: "User research", sensitive: true },
+      { value: "internal-docs", label: "Research notes", sensitive: true },
+    ],
+  },
+
+  content: {
+    items: [
+      { value: "button-labels", label: "Buttons & CTAs" },
+      { value: "input-fields", label: "Form labels" },
+      { value: "internal-docs", label: "Brand voice / guidelines", sensitive: true },
+    ],
+  },
+
+  strategy: {
+    items: [
+      { value: "selected-ui", label: "Flows / screens" },
+      { value: "user-research", label: "User research", sensitive: true },
+      { value: "internal-docs", label: "Product docs", sensitive: true },
+    ],
+  },
+};
+
+/* -----------------------------
+   DYNAMIC LABELS (FIXED)
+----------------------------- */
+
+const CONTEXT_LABEL_BY_MODE: Record<TaskMode, string> = {
+  design: "What design elements should the AI consider?",
+  evaluation: "What parts of the UI should be evaluated?",
+  research: "What research material should the AI use?",
+  content: "What content should the AI use?",
+  strategy: "What context should inform decisions?",
+};
+
+/* -----------------------------
+   UI COMPONENTS
+----------------------------- */
 
 const Field = ({
   label,
@@ -79,8 +144,19 @@ const CheckboxChip = ({
   </button>
 );
 
+/* -----------------------------
+   MAIN COMPONENT
+----------------------------- */
+
 export function ContextStep() {
   const { state, dispatch } = useReflection();
+
+  const dynamicContextOptions =
+    CONTEXT_BY_MODE[state.taskMode]?.items || [];
+
+  const contextLabel =
+    CONTEXT_LABEL_BY_MODE[state.taskMode] ||
+    "What information should the AI use?";
 
   const toggleStage = (value: DesignStage) => {
     dispatch({ type: "TOGGLE_STAGE", value });
@@ -113,7 +189,7 @@ export function ContextStep() {
         </h3>
 
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Help the AI understand your design so it can give more relevant and accurate feedback.
+          Help the AI understand your design so it can give more relevant feedback.
         </p>
       </div>
 
@@ -129,7 +205,7 @@ export function ContextStep() {
             })
           }
           placeholder="Onboarding screen – Figma Frame"
-          className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-xs outline-none placeholder:text-muted-foreground/60 focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all"
+          className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-xs outline-none"
         />
       </Field>
 
@@ -145,7 +221,7 @@ export function ContextStep() {
             })
           }
           placeholder="Fitness tracking app"
-          className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-xs outline-none placeholder:text-muted-foreground/60 focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all"
+          className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-xs outline-none"
         />
       </Field>
 
@@ -166,13 +242,13 @@ export function ContextStep() {
         </div>
       </Field>
 
-      {/* CONTEXT OPTIONS */}
+      {/* DYNAMIC CONTEXT */}
       <Field
-        label="What information should the AI use?"
-        helper="This simulates what the AI has access to (e.g., from Figma or documents)."
+        label={contextLabel}
+        helper="This simulates what the AI has access to."
       >
         <div className="space-y-1.5">
-          {CONTEXT_OPTIONS.map((item) => (
+          {dynamicContextOptions.map((item) => (
             <CheckboxChip
               key={item.value}
               label={item.label}
@@ -195,9 +271,8 @@ export function ContextStep() {
               value: e.target.value,
             })
           }
-          placeholder="This screen appears after account creation."
           rows={3}
-          className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-xs outline-none resize-none placeholder:text-muted-foreground/60 focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all"
+          className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-xs outline-none resize-none"
         />
       </Field>
 
@@ -205,7 +280,7 @@ export function ContextStep() {
       <div className="flex gap-2 pt-2">
         <button
           onClick={() => dispatch({ type: "SET_STEP", step: 0 })}
-          className="flex-1 py-2.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-muted/50 transition-all"
+          className="flex-1 py-2.5 rounded-lg text-xs border border-border bg-card"
         >
           Back
         </button>
@@ -214,9 +289,9 @@ export function ContextStep() {
           disabled={!canContinue}
           onClick={() => dispatch({ type: "NEXT_STEP" })}
           className={cn(
-            "flex-1 py-2.5 rounded-lg text-xs font-medium transition-all",
+            "flex-1 py-2.5 rounded-lg text-xs",
             canContinue
-              ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20 hover:shadow-md hover:shadow-primary/25"
+              ? "bg-primary text-primary-foreground"
               : "bg-muted text-muted-foreground cursor-not-allowed"
           )}
         >

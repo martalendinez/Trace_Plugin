@@ -13,11 +13,11 @@ export type StepId =
 ----------------------------- */
 
 export type TaskMode =
-  | "generate-ideas"
-  | "critique-design"
-  | "improve-accessibility"
-  | "write-ux-copy"
-  | "plan-interaction";
+  | "design"
+  | "evaluation"
+  | "research"
+  | "content"
+  | "strategy";
 
 export type DesignStage =
   | "research"

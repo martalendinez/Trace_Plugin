@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { ChevronDown, Check } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useReflection } from "../../features/reflection/state/ReflectionContext";
-import type { ReflectionState } from "../../features/reflection/types";
+import type { ReflectionState, TaskMode } from "../../features/reflection/types";
 
 import {
   DropdownMenu,
@@ -17,13 +17,17 @@ interface FieldProps {
   children: React.ReactNode;
 }
 
-const TASK_MODES = [
-  { value: "generate-ideas", label: "Generate ideas" },
-  { value: "critique-design", label: "Critique design" },
-  { value: "improve-accessibility", label: "Improve accessibility" },
-  { value: "write-ux-copy", label: "Write UX copy" },
-  { value: "plan-interaction", label: "Plan interaction" },
-] as const;
+/* -----------------------------
+   TASK MODES (MATCHES types.ts)
+----------------------------- */
+
+const TASK_MODES: { value: TaskMode; label: string }[] = [
+  { value: "design", label: "Design exploration" },
+  { value: "evaluation", label: "Evaluate design" },
+  { value: "research", label: "User research" },
+  { value: "content", label: "Content / UX writing" },
+  { value: "strategy", label: "Product strategy" },
+];
 
 const Field = ({ label, helper, children }: FieldProps) => (
   <div className="space-y-1.5">
@@ -51,8 +55,8 @@ export function IntentStep() {
 
   const canContinue =
     Boolean(state.taskMode) &&
-    Boolean(state.goal) &&
-    Boolean(state.audience);
+    Boolean(state.goal.trim()) &&
+    Boolean(state.audience.trim());
 
   return (
     <motion.div
@@ -72,7 +76,7 @@ export function IntentStep() {
         </h3>
 
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Describe what you're trying to achieve so the AI can give more relevant and useful feedback.
+          Describe what you're trying to achieve so the AI can give relevant feedback.
         </p>
       </div>
 
@@ -85,7 +89,7 @@ export function IntentStep() {
           <DropdownMenuTrigger asChild>
             <button
               className={cn(
-                "w-full flex items-center justify-between px-3 py-2.5 rounded-lg border text-xs bg-card transition-all",
+                "w-full flex items-center justify-between px-3 py-2.5 rounded-lg border text-xs bg-card",
                 "border-border hover:border-border/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
               )}
             >
@@ -119,12 +123,12 @@ export function IntentStep() {
       {/* GOAL */}
       <Field
         label="What is your goal?"
-        helper="What should users be able to do or achieve?"
+        helper="What should users achieve?"
       >
         <input
           value={state.goal}
           onChange={(e) => update("goal", e.target.value)}
-          placeholder="e.g. Complete checkout in under 2 minutes"
+          placeholder="e.g. Help users complete onboarding faster"
           className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-xs outline-none placeholder:text-muted-foreground/60 focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all"
         />
       </Field>
@@ -132,17 +136,17 @@ export function IntentStep() {
       {/* AUDIENCE */}
       <Field
         label="Who is this for?"
-        helper="Who are you designing for?"
+        helper="Describe your target users."
       >
         <input
           value={state.audience}
           onChange={(e) => update("audience", e.target.value)}
-          placeholder="e.g. First-time mobile users, 25–40"
+          placeholder="e.g. First-time users, non-technical"
           className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-xs outline-none placeholder:text-muted-foreground/60 focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all"
         />
       </Field>
 
-      {/* CONTINUE BUTTON */}
+      {/* CONTINUE */}
       <button
         disabled={!canContinue}
         onClick={() => dispatch({ type: "NEXT_STEP" })}
