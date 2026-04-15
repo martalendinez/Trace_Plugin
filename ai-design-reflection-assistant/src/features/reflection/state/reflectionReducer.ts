@@ -36,6 +36,7 @@ export function reflectionReducer(
     case "TOGGLE_STAGE": {
       const value: DesignStage = action.value;
       const exists = state.designStage.includes(value);
+
       return {
         ...state,
         designStage: exists
@@ -47,6 +48,7 @@ export function reflectionReducer(
     case "TOGGLE_CONTEXT": {
       const value: ContextItem = action.value;
       const exists = state.contextSelection.includes(value);
+
       return {
         ...state,
         contextSelection: exists
@@ -98,6 +100,13 @@ export function reflectionReducer(
           state.changeInstructions,
       };
 
+    /* ⭐ CRITICAL FIX: independent improvements injection */
+    case "SET_IMPROVEMENTS":
+      return {
+        ...state,
+        improvements: action.improvements || [],
+      };
+
     /* OPTION REFINEMENT FLOW */
 
     case "OPEN_REFINEMENT_PAGE":
@@ -124,16 +133,19 @@ export function reflectionReducer(
       };
 
     case "SET_REFINED_OPTION_DRAFT":
-      return { ...state, refinedOptionDraft: action.option };
+      return {
+        ...state,
+        refinedOptionDraft: action.option,
+      };
 
     case "APPLY_REFINED_OPTION": {
       if (!state.optionBeingRefined || !action.option) return state;
 
       const base = state.optionBeingRefined;
+
       const refined: OptionCard = {
         ...action.option,
-        // 🔐 keep the original id so replacement works
-        id: base.id,
+        id: base.id, // keep identity stable
       };
 
       return {
@@ -184,11 +196,16 @@ export function reflectionReducer(
 
     case "ADD_IMPROVEMENT":
       if (!action.text) return state;
+
       return {
         ...state,
         improvements: [
           ...state.improvements,
-          { id: uuid(), text: action.text, applied: false },
+          {
+            id: uuid(),
+            text: action.text,
+            applied: false,
+          },
         ],
       };
 
@@ -215,7 +232,10 @@ export function reflectionReducer(
       };
 
     case "SET_LOADING":
-      return { ...state, loading: action.loading };
+      return {
+        ...state,
+        loading: action.loading,
+      };
 
     default:
       return state;

@@ -4,37 +4,32 @@ import crypto from "crypto";
 
 const router = Router();
 
+/* -------------------------------------------------------
+   DESIGN STAGE BEHAVIOR
+-------------------------------------------------------- */
 const buildDesignStageBehavior = (designStage: string[]) => `
 Design stage behavior rules:
 
 If stage includes "research":
-- Focus on user needs, motivations, pain points, and assumptions.
+- Focus on user needs, motivations, pain points, assumptions.
 - Avoid UI-level feedback.
-- Avoid layout, spacing, or visual critiques.
-- Prioritize problem framing and hypothesis clarity.
 
 If stage includes "wireframe":
-- Focus on structure, flow, clarity, and interaction patterns.
-- Avoid visual polish, typography, or color feedback.
-- Avoid pixel-level comments.
-- Prioritize layout logic and usability.
+- Focus on structure, flow, and usability.
+- Avoid visual polish feedback.
 
 If stage includes "early-concept":
-- Focus on conceptual alternatives, design directions, and tradeoffs.
-- Encourage exploration and divergent thinking.
-- Avoid detailed UI critique.
+- Focus on ideas, directions, and tradeoffs.
 
 If stage includes "high-fidelity":
-- Provide detailed UI critique: spacing, hierarchy, contrast, accessibility.
-- Be specific and actionable.
-- Avoid conceptual reframing unless necessary.
+- Focus on UI details like spacing, hierarchy, accessibility.
 
 Selected design stage:
 ${designStage.join(", ")}
 `;
 
 /* -------------------------------------------------------
-   MAIN REFLECTION ENDPOINT
+   MAIN REFLECTION
 -------------------------------------------------------- */
 router.post("/", async (req, res) => {
   try {
@@ -50,47 +45,41 @@ router.post("/", async (req, res) => {
       activeCritiqueCategories = [],
     } = req.body;
 
-    const categoriesList =
+    const categories =
       activeCritiqueCategories.length > 0
         ? activeCritiqueCategories.join(", ")
-        : "accessibility, edge-cases, interaction-complexity, consistency, usability";
+        : "accessibility, usability, edge-cases";
 
     const prompt = `
 You are a senior UX design assistant.
 
-Return STRICT JSON. No markdown. No commentary.
+Return STRICT JSON only.
 
 ${buildDesignStageBehavior(designStage)}
-
-CRITIQUES MUST:
-- Be based on the selected option
-- Match ONLY the selected categories
-- Generate 2–4 critiques per selected category
-- Use the exact category names provided
 
 Selected option:
 ${selectedOption ? JSON.stringify(selectedOption, null, 2) : "None"}
 
-Selected critique categories:
-${categoriesList}
+Critique categories:
+${categories}
 
 Goal: ${goal}
 Audience: ${audience}
 Product context: ${productContext}
-Context selection: ${contextSelection.join(", ")}
+Context: ${contextSelection.join(", ")}
 
-Return JSON EXACTLY like this:
+Return:
 
 {
   "options": [],
   "critiques": [
     {
       "id": "string",
-      "category": "one of the selected categories",
-      "title": "short issue title",
-      "concern": "1–2 sentence explanation",
-      "suggestion": "1–2 sentence improvement",
-      "uncertaintyNote": "short note"
+      "category": "string",
+      "title": "short issue",
+      "concern": "explanation",
+      "suggestion": "improvement",
+      "uncertaintyNote": "note"
     }
   ],
   "improvements": [],
@@ -102,7 +91,7 @@ Return JSON EXACTLY like this:
       model: "llama-3.3-70b-versatile",
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: "You are a precise UX design expert." },
+        { role: "system", content: "You are a UX expert." },
         { role: "user", content: prompt },
       ],
     });
@@ -110,155 +99,43 @@ Return JSON EXACTLY like this:
     const raw = completion.choices[0]?.message?.content || "{}";
     const data = JSON.parse(raw);
 
-    const normalizedCritiques = (data.critiques || []).map((c: any) => {
-      if (typeof c === "string") {
-        return {
-          id: crypto.randomUUID(),
-          category: activeCritiqueCategories[0] || "usability",
-          title: c,
-          concern: c,
-          suggestion: "Consider refining this aspect for clarity.",
-          uncertaintyNote: "This critique may not apply in all contexts.",
-        };
-      }
-
-      return {
+    return res.json({
+      critiques: (data.critiques || []).map((c: any) => ({
         id: c.id || crypto.randomUUID(),
-        category: c.category || activeCritiqueCategories[0] || "usability",
-        title: c.title || "Potential issue",
+        category: c.category || "usability",
+        title: c.title || "",
         concern: c.concern || "",
         suggestion: c.suggestion || "",
-        uncertaintyNote:
-          c.uncertaintyNote || "This critique may not apply in all contexts.",
-      };
-    });
+        uncertaintyNote: c.uncertaintyNote || "",
+      })),
 
-    const normalizedImprovements = (data.improvements || []).map(
-      (imp: any) => ({
+      improvements: (data.improvements || []).map((i: any) => ({
         id: crypto.randomUUID(),
-        text: typeof imp === "string" ? imp : imp?.text || "",
+        text: typeof i === "string" ? i : i?.text || "",
         applied: false,
-      })
-    );
+      })),
 
-    const normalizedChangeInstructions = (data.changeInstructions || [])
-      .map((ci: any) => {
-        if (!ci || typeof ci !== "object") return null;
+      changeInstructions: (data.changeInstructions || []).map((ci: any) => ({
+        type: ci.type,
+        nodeId: ci.nodeId || "",
+        value: ci.value || "",
+        color: ci.color,
+        width: ci.width,
+        height: ci.height,
+      })),
 
-        if (ci.type === "update_text") {
-          return {
-            type: "update_text",
-            nodeId: ci.nodeId || "",
-            value: ci.value || "",
-          };
-        }
-        if (ci.type === "change_color") {
-          return {
-            type: "change_color",
-            nodeId: ci.nodeId || "",
-            color: ci.color || "#000000",
-          };
-        }
-        if (ci.type === "resize_node") {
-          return {
-            type: "resize_node",
-            nodeId: ci.nodeId || "",
-            width: Number(ci.width) || 0,
-            height: Number(ci.height) || 0,
-          };
-        }
-        return null;
-      })
-      .filter(Boolean);
-
-    return res.json({
-      critiques: normalizedCritiques,
-      improvements: normalizedImprovements,
-      changeInstructions: normalizedChangeInstructions,
       options: data.options || [],
     });
   } catch (err) {
     console.error("Error in /api/reflect:", err);
-    return res.status(500).json({ error: "Failed to process reflection" });
+    return res.status(500).json({ error: "Failed reflection" });
   }
 });
 
 /* -------------------------------------------------------
-   OPTIONS-ONLY ENDPOINT
+   OPTIONS
 -------------------------------------------------------- */
 router.post("/options", async (req, res) => {
-  try {
-    const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
-    const { goal, audience, productContext, designStage = [], contextSelection = [] } =
-      req.body;
-
-    const prompt = `
-You are a senior UX design assistant.
-
-Return STRICT JSON. No markdown. No commentary.
-
-${buildDesignStageBehavior(designStage)}
-
-Generate ONLY the "options" array. STRICT JSON.
-
-{
-  "options": [
-    {
-      "id": "string",
-      "title": "short option name",
-      "summary": "1–2 sentence summary",
-      "problem": "what problem this option addresses",
-      "assumption": "key assumption",
-      "principle": "design principle",
-      "tradeoff": "main trade-off",
-      "suggestedChanges": []
-    }
-  ]
-}
-
-Goal: ${goal}
-Audience: ${audience}
-Product context: ${productContext}
-Context selection: ${contextSelection.join(", ")}
-`;
-
-    const completion = await client.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: "You are a UX design expert." },
-        { role: "user", content: prompt },
-      ],
-    });
-
-    const raw = completion.choices[0]?.message?.content || "{}";
-    const data = JSON.parse(raw);
-
-    const normalizedOptions = (data.options || []).map((o: any) => ({
-      id: o.id || crypto.randomUUID(),
-      title: o.title || "Untitled option",
-      summary: o.summary || "",
-      problem: o.problem || "",
-      assumption: o.assumption || "",
-      principle: o.principle || "",
-      tradeoff: o.tradeoff || "",
-      suggestedChanges: Array.isArray(o.suggestedChanges)
-        ? o.suggestedChanges
-        : [],
-    }));
-
-    return res.json({ options: normalizedOptions });
-  } catch (err) {
-    console.error("Error in /api/reflect/options:", err);
-    return res.status(500).json({ error: "Failed to generate options" });
-  }
-});
-
-/* -------------------------------------------------------
-   OPTION REFINEMENT ENDPOINT
--------------------------------------------------------- */
-router.post("/refine-option", async (req, res) => {
   try {
     const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -268,61 +145,176 @@ router.post("/refine-option", async (req, res) => {
       productContext,
       designStage = [],
       contextSelection = [],
-      option,
-      messages = [],
     } = req.body;
 
     const prompt = `
-You are a senior UX design assistant helping refine a single design option.
+You are a UX expert.
 
-Return STRICT JSON. No markdown. No commentary.
+Return ONLY options JSON.
 
 ${buildDesignStageBehavior(designStage)}
 
-You will receive:
-- The current option
-- The conversation so far
-- The latest user message
-
-You MUST:
-- Respond as the AI in the conversation
-- Optionally propose a refined version of the option
-
-Return JSON EXACTLY like this:
-
 {
-  "assistantMessage": "your reply to the user",
-  "refinedOption": {
-    "id": "string",
-    "title": "short option name",
-    "summary": "1–2 sentence summary",
-    "problem": "what problem this option addresses",
-    "assumption": "key assumption",
-    "principle": "design principle",
-    "tradeoff": "main trade-off",
-    "suggestedChanges": []
-  }
+  "options": [
+    {
+      "id": "string",
+      "title": "title",
+      "summary": "summary",
+      "problem": "problem",
+      "assumption": "assumption",
+      "principle": "principle",
+      "tradeoff": "tradeoff",
+      "suggestedChanges": []
+    }
+  ]
 }
-
-If you do NOT want to change the option, set "refinedOption" to null.
-
-Current option:
-${JSON.stringify(option, null, 2)}
-
-Conversation so far:
-${JSON.stringify(messages, null, 2)}
 
 Goal: ${goal}
 Audience: ${audience}
-Product context: ${productContext}
-Context selection: ${contextSelection.join(", ")}
+Context: ${contextSelection.join(", ")}
 `;
 
     const completion = await client.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: "You are a precise UX design expert." },
+        { role: "system", content: "You are a UX expert." },
+        { role: "user", content: prompt },
+      ],
+    });
+
+    const raw = completion.choices[0]?.message?.content || "{}";
+    const data = JSON.parse(raw);
+
+    return res.json({
+      options: (data.options || []).map((o: any) => ({
+        id: o.id || crypto.randomUUID(),
+        title: o.title || "Untitled",
+        summary: o.summary || "",
+        problem: o.problem || "",
+        assumption: o.assumption || "",
+        principle: o.principle || "",
+        tradeoff: o.tradeoff || "",
+        suggestedChanges: o.suggestedChanges || [],
+      })),
+    });
+  } catch (err) {
+    console.error("Error in /options:", err);
+    return res.status(500).json({ error: "Failed options" });
+  }
+});
+
+/* -------------------------------------------------------
+   ⭐ IMPROVEMENTS (FULL FIX — NO OPTION REQUIRED)
+-------------------------------------------------------- */
+router.post("/improvements", async (req, res) => {
+  try {
+    const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+    const {
+      goal,
+      audience,
+      productContext,
+      designStage = [],
+      contextSelection = [],
+      selectedOption,
+    } = req.body;
+
+    const safeOption =
+      selectedOption && Object.keys(selectedOption).length > 0
+        ? JSON.stringify(selectedOption, null, 2)
+        : "No specific option selected — generate general UX improvements for this product.";
+
+    const prompt = `
+You are a UX expert.
+
+Generate ONLY improvements (NO critiques).
+
+Return JSON:
+
+{
+  "improvements": [
+    {
+      "id": "string",
+      "text": "clear actionable improvement",
+      "applied": false
+    }
+  ]
+}
+
+Rules:
+- ALWAYS generate improvements even if no option is selected
+- If no option is selected, generate general UX improvements
+- 5–10 improvements
+- Focus on usability, clarity, accessibility, flow
+
+Selected option:
+${safeOption}
+
+Goal: ${goal}
+Audience: ${audience}
+ProductContext: ${productContext}
+Context: ${contextSelection.join(", ")}
+`;
+
+    const completion = await client.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: "You are a UX expert." },
+        { role: "user", content: prompt },
+      ],
+    });
+
+    const raw = completion.choices[0]?.message?.content || "{}";
+    const data = JSON.parse(raw);
+
+    return res.json({
+      improvements: (data.improvements || []).map((i: any) => ({
+        id: crypto.randomUUID(),
+        text: i.text || "",
+        applied: false,
+      })),
+    });
+  } catch (err) {
+    console.error("Error in /improvements:", err);
+    return res.status(500).json({ error: "Failed improvements" });
+  }
+});
+
+/* -------------------------------------------------------
+   REFINE OPTION
+-------------------------------------------------------- */
+router.post("/refine-option", async (req, res) => {
+  try {
+    const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+    const { option, messages = [], goal, audience, productContext } = req.body;
+
+    const prompt = `
+Return JSON:
+
+{
+  "assistantMessage": "",
+  "refinedOption": null
+}
+
+Option:
+${JSON.stringify(option)}
+
+Messages:
+${JSON.stringify(messages)}
+
+Goal: ${goal}
+Audience: ${audience}
+Product: ${productContext}
+`;
+
+    const completion = await client.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: "You are a UX expert." },
         { role: "user", content: prompt },
       ],
     });
@@ -335,97 +327,53 @@ Context selection: ${contextSelection.join(", ")}
       refinedOption: data.refinedOption || null,
     });
   } catch (err) {
-    console.error("Error in /api/reflect/refine-option:", err);
-    return res.status(500).json({ error: "Failed to refine option" });
+    return res.status(500).json({ error: "Failed refine-option" });
   }
 });
 
 /* -------------------------------------------------------
-   CRITIQUE DISCUSSION ENDPOINT
+   CRITIQUE DISCUSS
 -------------------------------------------------------- */
 router.post("/discuss-critique", async (req, res) => {
   try {
     const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-    const {
-      critique,
-      messages = [],
-      goal,
-      audience,
-      productContext,
-      designStage = [],
-      contextSelection = [],
-    } = req.body;
+    const { critique, messages = [] } = req.body;
 
     const prompt = `
-You are a senior UX design assistant helping discuss a critique.
-
-Return STRICT JSON. No markdown. No commentary.
-
-${buildDesignStageBehavior(designStage)}
-
-You will receive:
-- The critique
-- The conversation so far
-- The latest user message
-
-You MUST:
-- Respond as the AI in the conversation
-- Optionally propose a refined suggestion
-
-Return JSON EXACTLY like this:
+Return JSON:
 
 {
-  "assistantMessage": "your reply to the user",
-  "refinedSuggestion": "optional refined suggestion or null"
+  "assistantMessage": "",
+  "refinedSuggestion": null
 }
 
 Critique:
-${JSON.stringify(critique, null, 2)}
+${JSON.stringify(critique)}
 
-Conversation so far:
-${JSON.stringify(messages, null, 2)}
-
-Goal: ${goal}
-Audience: ${audience}
-Product context: ${productContext}
-Context selection: ${contextSelection.join(", ")}
+Messages:
+${JSON.stringify(messages)}
 `;
 
     const completion = await client.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       response_format: { type: "json_object" },
       messages: [
-        {
-          role: "system",
-          content:
-            "You MUST return valid JSON. No markdown. No commentary. No natural language outside JSON.",
-        },
+        { role: "system", content: "Return only JSON." },
         { role: "user", content: prompt },
       ],
     });
 
     const raw = completion.choices[0]?.message?.content || "{}";
-
-    let data;
-    try {
-      data = JSON.parse(raw);
-    } catch {
-      data = {
-        assistantMessage: raw,
-        refinedSuggestion: null,
-      };
-    }
+    const data = JSON.parse(raw);
 
     return res.json({
       assistantMessage: data.assistantMessage || "",
       refinedSuggestion: data.refinedSuggestion || null,
     });
   } catch (err) {
-    console.error("Error in /api/reflect/discuss-critique:", err);
     return res.json({
-      assistantMessage:
-        "Something went wrong while discussing this critique.",
+      assistantMessage: "Error occurred",
       refinedSuggestion: null,
     });
   }
