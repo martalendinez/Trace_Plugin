@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Check, Plus, Sparkles, ArrowUp } from "lucide-react";
+import { Check, Plus, Sparkles } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useReflection } from "../../features/reflection/state/ReflectionContext";
 
@@ -10,11 +10,9 @@ export function ApplyStep() {
   const { state, dispatch } = useReflection();
 
   const [customText, setCustomText] = useState("");
-  const [chatInput, setChatInput] = useState("");
   const [loading, setLoading] = useState(false);
 
   const improvements = state.improvements;
-  const chatMessages = state.refinementChat;
 
   const prevOptionId = useRef<string | null>(null);
 
@@ -90,26 +88,6 @@ export function ApplyStep() {
 
   const toggleApply = (id: string) => {
     dispatch({ type: "TOGGLE_IMPROVEMENT_APPLIED", id });
-  };
-
-  const handleChatSend = () => {
-    if (!chatInput.trim()) return;
-
-    dispatch({
-      type: "ADD_REFINEMENT_MESSAGE",
-      message: { role: "user", content: chatInput.trim() },
-    });
-
-    dispatch({
-      type: "ADD_REFINEMENT_MESSAGE",
-      message: {
-        role: "assistant",
-        content:
-          "Got it — I’ve refined the suggestion. You can now apply it to the canvas.",
-      },
-    });
-
-    setChatInput("");
   };
 
   return (
@@ -197,61 +175,6 @@ export function ApplyStep() {
         >
           <Plus className="w-3.5 h-3.5" />
         </button>
-      </div>
-
-      {/* CHAT */}
-      <div className="border border-border rounded-xl overflow-hidden">
-        <div className="px-3 py-2 border-b border-border flex items-center gap-1.5">
-          <Sparkles className="w-3 h-3 text-primary" />
-          <span className="text-[10px] uppercase tracking-wider">
-            Refinement Chat
-          </span>
-        </div>
-
-        <div className="max-h-[160px] overflow-y-auto p-3 space-y-2">
-          {chatMessages.map((msg, i) => (
-            <div
-              key={i}
-              className={cn(
-                "text-xs px-3 py-2 rounded-lg max-w-[90%]",
-                msg.role === "user"
-                  ? "bg-primary text-white ml-auto"
-                  : "bg-muted"
-              )}
-            >
-              {msg.content}
-            </div>
-          ))}
-        </div>
-
-        <div className="p-2 border-t border-border">
-          <div className="flex items-center gap-1.5 bg-muted rounded-lg px-2.5 py-1.5">
-            <input
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleChatSend();
-                }
-              }}
-              placeholder="Refine an improvement..."
-              className="flex-1 bg-transparent text-xs outline-none"
-            />
-            <button
-              onClick={handleChatSend}
-              disabled={!chatInput.trim()}
-              className={cn(
-                "w-5 h-5 rounded flex items-center justify-center",
-                chatInput.trim()
-                  ? "bg-primary text-white"
-                  : "bg-border"
-              )}
-            >
-              <ArrowUp className="w-3 h-3" />
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* APPLY BUTTON */}
