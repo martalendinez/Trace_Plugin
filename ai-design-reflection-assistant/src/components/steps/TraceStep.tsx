@@ -1,10 +1,9 @@
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Eye,
   EyeOff,
   Pencil,
-  Check,
   Target,
   MessageSquare,
   Lightbulb,
@@ -16,10 +15,7 @@ export function TraceStep() {
   const { state, dispatch } = useReflection();
 
   const [visible, setVisible] = useState(true);
-  const [editing, setEditing] = useState<number | null>(null);
-  const [editValue, setEditValue] = useState("");
 
-  // Build entries dynamically from your real state
   const appliedImprovements = state.improvements.filter((i) => i.applied);
 
   const entries = useMemo(
@@ -31,8 +27,7 @@ export function TraceStep() {
         color: "bg-primary/10 text-primary",
         content: state.goal || "No intent provided.",
         editable: true,
-        onSave: (val: string) =>
-          dispatch({ type: "SET_FIELD", field: "goal", value: val }),
+        goToStep: 0, // ⭐ go back to IntentStep
       },
       {
         id: 2,
@@ -55,26 +50,11 @@ export function TraceStep() {
             ? "No improvements were applied."
             : `Applied ${appliedImprovements.length} improvement(s).`,
         editable: true,
-        onSave: (val: string) =>
-          dispatch({
-            type: "SET_FIELD",
-            field: "designerNotes",
-            value: val,
-          }),
+        goToStep: 4, // ⭐ go back to ApplyStep
       },
     ],
     [state, appliedImprovements]
   );
-
-  const startEdit = (entry: any) => {
-    setEditing(entry.id);
-    setEditValue(entry.content);
-  };
-
-  const saveEdit = (entry: any) => {
-    entry.onSave?.(editValue);
-    setEditing(null);
-  };
 
   return (
     <motion.div
@@ -116,7 +96,6 @@ export function TraceStep() {
           >
             {entries.map((entry, idx) => {
               const Icon = entry.icon;
-              const isEditing = editing === entry.id;
 
               return (
                 <div key={entry.id} className="relative flex gap-3">
@@ -143,38 +122,24 @@ export function TraceStep() {
                         {entry.step}
                       </span>
 
-                      {entry.editable && !isEditing && (
+                      {entry.editable && (
                         <button
-                          onClick={() => startEdit(entry)}
+                          onClick={() =>
+                            dispatch({
+                              type: "SET_STEP",
+                              step: entry.goToStep,
+                            })
+                          }
                           className="text-muted-foreground hover:text-foreground transition-colors"
                         >
                           <Pencil className="w-3 h-3" />
                         </button>
                       )}
-
-                      {isEditing && (
-                        <button
-                          onClick={() => saveEdit(entry)}
-                          className="text-primary hover:text-primary/80 transition-colors"
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                        </button>
-                      )}
                     </div>
 
-                    {isEditing ? (
-                      <textarea
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        rows={3}
-                        className="w-full bg-muted rounded-lg px-3 py-2 text-xs outline-none resize-none focus:ring-2 focus:ring-primary/10"
-                        autoFocus
-                      />
-                    ) : (
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        {entry.content}
-                      </p>
-                    )}
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {entry.content}
+                    </p>
                   </div>
                 </div>
               );
@@ -215,10 +180,6 @@ export function TraceStep() {
     </motion.div>
   );
 }
-
-//
-// ⭐ SUMMARY STAT CARD
-//
 
 function SummaryStat({ label, value }: { label: string; value: string }) {
   return (
