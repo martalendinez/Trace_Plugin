@@ -149,7 +149,6 @@ const CATEGORIES: { value: CritiqueCategory; label: string }[] = [
   { value: "usability", label: "Usability" },
 ];
 
-// safely convert backend string → union type
 const normalize = (str: string): CritiqueCategory =>
   str.replace(/_/g, "-").toLowerCase() as CritiqueCategory;
 
@@ -194,7 +193,6 @@ export function CritiqueStep() {
           },
         });
 
-        // fallback improvements
         if (!result.improvements?.length) {
           dispatch({
             type: "SET_IMPROVEMENTS",
@@ -252,6 +250,31 @@ export function CritiqueStep() {
         <p className="text-xs text-muted-foreground">
           Review issues or skip if you want to continue directly.
         </p>
+
+        <div className="mt-3 p-3 rounded-lg bg-primary/5 border border-primary/10 text-[11px] leading-relaxed space-y-1.5">
+          <p className="text-[11px] text-foreground font-medium">
+            What is Critique Mode?
+          </p>
+
+          <p className="text-[11px] text-muted-foreground">
+            Critique Mode highlights potential issues in the option you selected.
+            These aren’t errors — they’re prompts to help you think about things
+            you might not have considered yet.
+          </p>
+
+          <p className="text-[11px] text-muted-foreground">
+            Critiques are grouped into categories like{" "}
+            <span className="font-medium text-foreground">accessibility</span>,{" "}
+            <span className="font-medium text-foreground">usability</span>,{" "}
+            <span className="font-medium text-foreground">consistency</span>, and{" "}
+            <span className="font-medium text-foreground">edge cases</span>.
+          </p>
+
+          <p className="text-[11px] text-muted-foreground">
+            You stay fully in control: apply a suggestion, ignore it, or discuss
+            it with the AI.
+          </p>
+        </div>
       </div>
 
       {loading && (
@@ -264,19 +287,30 @@ export function CritiqueStep() {
         {CATEGORIES.map((cat) => (
           <label
             key={cat.value}
-            className="flex items-center gap-2 border border-border rounded-lg px-3 py-2 text-xs"
+            className="flex items-center justify-between border border-border rounded-lg px-3 py-2 text-xs"
           >
-            <input
-              type="checkbox"
-              checked={state.activeCritiqueCategories.includes(cat.value)}
-              onChange={() =>
-                dispatch({
-                  type: "TOGGLE_CRITIQUE_CATEGORY",
-                  value: cat.value,
-                })
-              }
-            />
-            {cat.label}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() =>
+                  dispatch({
+                    type: "TOGGLE_CRITIQUE_CATEGORY",
+                    value: cat.value,
+                  })
+                }
+                className={cn(
+                  "w-4 h-4 rounded-md border transition-all flex items-center justify-center",
+                  state.activeCritiqueCategories.includes(cat.value)
+                    ? "bg-primary border-primary text-primary-foreground"
+                    : "bg-card border-border hover:bg-muted/40"
+                )}
+              >
+                {state.activeCritiqueCategories.includes(cat.value) && (
+                  <div className="w-2 h-2 rounded-sm bg-primary-foreground" />
+                )}
+              </button>
+
+              <span>{cat.label}</span>
+            </div>
           </label>
         ))}
       </div>
