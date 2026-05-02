@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useReflection } from "../../features/reflection/state/ReflectionContext";
-import { callReflectApi } from "../../lib/reflectApi";
 
 const steps = [
   { id: 0, label: "Intent", icon: Target },
@@ -24,43 +23,12 @@ export default function StepNavigator() {
   const { state, dispatch } = useReflection();
 
   async function handleStepClick(stepId: number) {
-    // ⭐ Only Critique step requires waiting for AI
+    // Critique step is handled by wrapped dispatch in ReflectionContext
     if (stepId === 3) {
-      try {
-        dispatch({ type: "SET_LOADING", loading: true });
-
-        const selectedOption = state.generatedOptions.find(
-          (o) => o.id === state.selectedOptionId
-        );
-
-        const payload = {
-          goal: state.goal,
-          audience: state.audience,
-          productContext: state.productContext,
-          designStage: state.designStage,
-          contextSelection: state.contextSelection,
-          selectedOption,
-        };
-
-        const result = await callReflectApi(payload);
-
-        dispatch({
-          type: "SET_REFLECTION_RESULT",
-          payload: result,
-        });
-
-        // ⭐ Only navigate AFTER AI finishes
-        dispatch({ type: "SET_STEP", step: 3 });
-      } catch (err) {
-        console.error("Reflection API error:", err);
-      } finally {
-        dispatch({ type: "SET_LOADING", loading: false });
-      }
-
-      return; // ⭐ Prevent default navigation
+      await dispatch({ type: "NEXT_STEP" });
+      return;
     }
 
-    // Normal navigation for other steps
     dispatch({ type: "SET_STEP", step: stepId });
   }
 

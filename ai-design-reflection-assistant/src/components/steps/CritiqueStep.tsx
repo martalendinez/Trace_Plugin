@@ -1,46 +1,61 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, AlertTriangle, Info } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useReflection } from "../../features/reflection/state/ReflectionContext";
-import { callReflectApi } from "../../lib/reflectApi";
-import type {
-  CritiqueItem,
-  CritiqueCategory,
-} from "../../features/reflection/types";
+import type { CritiqueItem } from "../../features/reflection/types";
 
-const severityConfig = {
-  warning: {
-    icon: AlertTriangle,
-    bg: "bg-amber-50",
-    border: "border-amber-200/60",
-    tag: "bg-amber-100 text-amber-700",
-    dot: "bg-amber-400",
+const severityConfig: Record<
+  string,
+  { border: string; bg: string; dot: string; tag: string }
+> = {
+  accessibility: {
+    border: "border-red-300",
+    bg: "bg-red-50",
+    dot: "bg-red-500",
+    tag: "bg-red-100 text-red-700",
   },
-  info: {
-    icon: Info,
-    bg: "bg-primary/[0.03]",
-    border: "border-primary/10",
-    tag: "bg-primary/10 text-primary",
-    dot: "bg-primary",
+  usability: {
+    border: "border-amber-300",
+    bg: "bg-amber-50",
+    dot: "bg-amber-500",
+    tag: "bg-amber-100 text-amber-700",
+  },
+  consistency: {
+    border: "border-blue-300",
+    bg: "bg-blue-50",
+    dot: "bg-blue-500",
+    tag: "bg-blue-100 text-blue-700",
+  },
+  "edge-cases": {
+    border: "border-purple-300",
+    bg: "bg-purple-50",
+    dot: "bg-purple-500",
+    tag: "bg-purple-100 text-purple-700",
+  },
+  "interaction-complexity": {
+    border: "border-green-300",
+    bg: "bg-green-50",
+    dot: "bg-green-500",
+    tag: "bg-green-100 text-green-700",
   },
 };
 
 function CritiqueCard({
   critique,
-  onApply,
+  onAccept,
+  onReject,
   onDiscuss,
 }: {
   critique: CritiqueItem;
-  onApply: (c: CritiqueItem) => void;
+  onAccept: (c: CritiqueItem) => void;
+  onReject: (c: CritiqueItem) => void;
   onDiscuss: (c: CritiqueItem) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
 
   const config =
-    severityConfig[
-      critique.category === "accessibility" ? "warning" : "info"
-    ];
+    severityConfig[critique.category] || severityConfig.usability;
 
   return (
     <motion.div
@@ -87,141 +102,118 @@ function CritiqueCard({
         />
       </button>
 
-      <AnimatePresence>
-        {expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            <div className="px-3 pb-3 pl-[26px] space-y-3">
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {critique.concern}
-              </p>
+      {expanded && (
+        <div className="px-3 pb-3 pl-[26px] space-y-3">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            {critique.concern}
+          </p>
 
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                <span className="font-medium text-foreground">
-                  Suggestion:{" "}
-                </span>
-                {critique.suggestion}
-              </p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            <span className="font-medium text-foreground">
+              Suggestion:{" "}
+            </span>
+            {critique.suggestion}
+          </p>
 
-              <p className="text-[11px] text-muted-foreground italic">
-                {critique.uncertaintyNote}
-              </p>
+          <p className="text-[11px] text-muted-foreground italic">
+            {critique.uncertaintyNote}
+          </p>
 
-              <div className="flex flex-col gap-1.5">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onApply(critique);
-                  }}
-                  className="text-xs font-medium text-primary hover:text-primary/80"
-                >
-                  Apply suggestion →
-                </button>
+          <div className="flex flex-col gap-1.5 pt-1">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onAccept(critique);
+              }}
+              className="text-xs font-medium text-primary hover:text-primary/80"
+            >
+              Accept
+            </button>
 
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDiscuss(critique);
-                  }}
-                  className="text-xs font-medium text-primary/70 hover:text-primary"
-                >
-                  Discuss with AI →
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onReject(critique);
+              }}
+              className="text-xs font-medium text-red-500 hover:text-red-600"
+            >
+              Reject
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDiscuss(critique);
+              }}
+              className="text-xs font-medium text-primary/70 hover:text-primary"
+            >
+              Discuss with AI
+            </button>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }
-
-const CATEGORIES: { value: CritiqueCategory; label: string }[] = [
-  { value: "accessibility", label: "Accessibility" },
-  { value: "edge-cases", label: "Edge cases" },
-  { value: "interaction-complexity", label: "Interaction complexity" },
-  { value: "consistency", label: "Consistency" },
-  { value: "usability", label: "Usability" },
-];
-
-const normalize = (str: string): CritiqueCategory =>
-  str.replace(/_/g, "-").toLowerCase() as CritiqueCategory;
 
 export function CritiqueStep() {
   const { state, dispatch } = useReflection();
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    async function run() {
-      if (!state.selectedOptionId) return;
-
-      const selectedOption = state.generatedOptions.find(
-        (o) => o.id === state.selectedOptionId
-      );
-
-      if (!selectedOption) return;
+    const loadCritiques = async () => {
+      if (state.critiques.length > 0) return;
 
       setLoading(true);
 
       try {
-        const result = await callReflectApi({
-          goal: state.goal,
-          audience: state.audience,
-          productContext: state.productContext,
-          designStage: state.designStage,
-          contextSelection: state.contextSelection,
-          selectedOption,
+        const selectedOption = state.generatedOptions.find(
+          (o) => o.id === state.selectedOptionId
+        );
+
+        const res = await fetch("/api/reflect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            goal: state.goal,
+            audience: state.audience,
+            productContext: state.productContext,
+            designStage: state.designStage,
+            contextSelection: state.contextSelection,
+            selectedOption,
+            activeCritiqueCategories: state.activeCritiqueCategories,
+          }),
         });
 
-        const normalizedCritiques: CritiqueItem[] = (
-          result.critiques || []
-        ).map((c: CritiqueItem) => ({
-          ...c,
-          category: normalize(c.category),
-        }));
+        const data = await res.json();
 
         dispatch({
           type: "SET_REFLECTION_RESULT",
-          payload: {
-            ...result,
-            critiques: normalizedCritiques,
-          },
+          payload: data,
         });
-
-        if (!result.improvements?.length) {
-          dispatch({
-            type: "SET_IMPROVEMENTS",
-            improvements: normalizedCritiques.map((c) => ({
-              id: crypto.randomUUID(),
-              text: c.suggestion,
-              applied: false,
-            })),
-          });
-        }
-      } finally {
-        setLoading(false);
+      } catch (err) {
+        console.error("Failed to load critiques", err);
       }
-    }
 
-    run();
-  }, [state.selectedOptionId]);
+      setLoading(false);
+    };
 
-  const filteredCritiques =
-    state.activeCritiqueCategories.length === 0
-      ? state.critiques
-      : state.critiques.filter((c: CritiqueItem) =>
-          state.activeCritiqueCategories
-            .map(normalize)
-            .includes(normalize(c.category))
-        );
+    loadCritiques();
+  }, []);
 
-  const handleApply = (critique: CritiqueItem) => {
-    dispatch({ type: "ADD_IMPROVEMENT", text: critique.suggestion });
+  const handleAccept = (critique: CritiqueItem) => {
+    dispatch({
+      type: "ADD_IMPROVEMENT",
+      text: critique.suggestion,
+    });
+
+    dispatch({
+      type: "REMOVE_CRITIQUE",
+      id: critique.id,
+    });
+  };
+
+  const handleReject = (critique: CritiqueItem) => {
     dispatch({ type: "REMOVE_CRITIQUE", id: critique.id });
   };
 
@@ -229,121 +221,54 @@ export function CritiqueStep() {
     dispatch({ type: "OPEN_CRITIQUE_CHAT", critique });
   };
 
-  const handleSkip = () => {
-    dispatch({ type: "SET_LOADING", loading: false });
-    dispatch({ type: "NEXT_STEP" });
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex-1 overflow-y-auto panel-scroll p-5 space-y-6"
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className="flex-1 overflow-y-auto panel-scroll p-4 space-y-4"
     >
       <div className="space-y-1">
-        <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-          STEP 4 OF 7
+        <h3 className="text-sm font-semibold text-foreground">
+          Critiques
+        </h3>
+
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          These critiques are generated from the option you selected.
+          They highlight potential issues, risks, or blind spots you may not have considered yet.
+          Accept critiques to include them in your final improvements, reject the ones you don’t want,
+          or discuss any critique further with the AI.
         </p>
-
-        <h3 className="text-sm font-semibold">Critique mode</h3>
-
-        <p className="text-xs text-muted-foreground">
-          Review issues or skip if you want to continue directly.
-        </p>
-
-        <div className="mt-3 p-3 rounded-lg bg-primary/5 border border-primary/10 text-[11px] leading-relaxed space-y-1.5">
-          <p className="text-[11px] text-foreground font-medium">
-            What is Critique Mode?
-          </p>
-
-          <p className="text-[11px] text-muted-foreground">
-            Critique Mode highlights potential issues in the option you selected.
-            These aren’t errors — they’re prompts to help you think about things
-            you might not have considered yet.
-          </p>
-
-          <p className="text-[11px] text-muted-foreground">
-            Critiques are grouped into categories like{" "}
-            <span className="font-medium text-foreground">accessibility</span>,{" "}
-            <span className="font-medium text-foreground">usability</span>,{" "}
-            <span className="font-medium text-foreground">consistency</span>, and{" "}
-            <span className="font-medium text-foreground">edge cases</span>.
-          </p>
-
-          <p className="text-[11px] text-muted-foreground">
-            You stay fully in control: apply a suggestion, ignore it, or discuss
-            it with the AI.
-          </p>
-        </div>
       </div>
 
       {loading && (
-        <div className="text-xs text-muted-foreground">
-          Generating critique...
-        </div>
+        <p className="text-xs text-muted-foreground">Loading critiques…</p>
       )}
 
-      <div className="space-y-2">
-        {CATEGORIES.map((cat) => (
-          <label
-            key={cat.value}
-            className="flex items-center justify-between border border-border rounded-lg px-3 py-2 text-xs"
-          >
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() =>
-                  dispatch({
-                    type: "TOGGLE_CRITIQUE_CATEGORY",
-                    value: cat.value,
-                  })
-                }
-                className={cn(
-                  "w-4 h-4 rounded-md border transition-all flex items-center justify-center",
-                  state.activeCritiqueCategories.includes(cat.value)
-                    ? "bg-primary border-primary text-primary-foreground"
-                    : "bg-card border-border hover:bg-muted/40"
-                )}
-              >
-                {state.activeCritiqueCategories.includes(cat.value) && (
-                  <div className="w-2 h-2 rounded-sm bg-primary-foreground" />
-                )}
-              </button>
+      <AnimatePresence>
+        {!loading &&
+          state.critiques.map((critique) => (
+            <CritiqueCard
+              key={critique.id}
+              critique={critique}
+              onAccept={handleAccept}
+              onReject={handleReject}
+              onDiscuss={handleDiscuss}
+            />
+          ))}
+      </AnimatePresence>
 
-              <span>{cat.label}</span>
-            </div>
-          </label>
-        ))}
-      </div>
-
-      <div className="space-y-2">
-        {filteredCritiques.map((critique: CritiqueItem) => (
-          <CritiqueCard
-            key={critique.id}
-            critique={critique}
-            onApply={handleApply}
-            onDiscuss={handleDiscuss}
-          />
-        ))}
-      </div>
-
-      <div className="flex gap-2 pt-2">
+      <div className="flex justify-between pt-2">
         <button
           onClick={() => dispatch({ type: "PREV_STEP" })}
-          className="flex-1 py-2.5 rounded-lg border text-xs"
+          className="h-10 px-4 rounded-lg border border-border bg-card text-xs font-medium hover:bg-muted/50 transition-all"
         >
           Back
         </button>
 
         <button
-          onClick={handleSkip}
-          className="flex-1 py-2.5 rounded-lg text-xs bg-muted"
-        >
-          Skip
-        </button>
-
-        <button
           onClick={() => dispatch({ type: "NEXT_STEP" })}
-          className="flex-1 py-2.5 rounded-lg bg-primary text-primary-foreground text-xs"
+          className="h-10 px-4 rounded-lg bg-primary text-primary-foreground text-xs font-medium shadow-sm shadow-primary/20 hover:shadow-md transition-all"
         >
           Continue
         </button>

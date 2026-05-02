@@ -88,24 +88,45 @@ export function reflectionReducer(
     }
 
     /* -----------------------------
-       OPTION SELECTION + REFLECTION RESULT
+       OPTION SELECTION
+       (IMPORTANT: CLEAR OLD CRITIQUES)
     ----------------------------- */
 
     case "SELECT_OPTION":
-      return { ...state, selectedOptionId: action.value };
+      return {
+        ...state,
+        selectedOptionId: action.value,
+        critiques: [], // clear old critiques
+      };
+
+    /* -----------------------------
+       SET CRITIQUES DIRECTLY
+    ----------------------------- */
+
+    case "SET_CRITIQUES":
+      return {
+        ...state,
+        critiques: action.critiques || [],
+      };
+
+    /* -----------------------------
+       REFLECTION RESULT
+       (ALWAYS UPDATE CRITIQUES)
+    ----------------------------- */
 
     case "SET_REFLECTION_RESULT":
       return {
         ...state,
+
         generatedOptions:
           action.payload.options ?? state.generatedOptions,
 
-        critiques: action.payload.critiques
-          ? action.payload.critiques.map((c: CritiqueItem) => ({
-              ...c,
-              category: c.category.replace(/_/g, "-").toLowerCase(),
-            }))
-          : state.critiques,
+        critiques: (action.payload.critiques || []).map(
+          (c: CritiqueItem) => ({
+            ...c,
+            category: c.category.replace(/_/g, "-").toLowerCase(),
+          })
+        ),
 
         improvements:
           action.payload.improvements &&
@@ -214,7 +235,7 @@ export function reflectionReducer(
       };
 
     /* -----------------------------
-       IMPROVEMENTS + APPLY STEP
+       IMPROVEMENTS
     ----------------------------- */
 
     case "ADD_IMPROVEMENT":
