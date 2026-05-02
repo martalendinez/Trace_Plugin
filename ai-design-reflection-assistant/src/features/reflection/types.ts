@@ -19,11 +19,23 @@ export type TaskMode =
   | "content"
   | "strategy";
 
+/* -----------------------------
+   UPDATED DESIGN STAGES
+----------------------------- */
+
 export type DesignStage =
-  | "research"
+  | "problem-definition"
+  | "user-flows"
+  | "low-fidelity"
   | "wireframe"
-  | "early-concept"
-  | "high-fidelity";
+  | "mid-fidelity"
+  | "high-fidelity"
+  | "prototype"
+  | "usability-testing";
+
+/* -----------------------------
+   CONTEXT ITEMS
+----------------------------- */
 
 export type ContextItem =
   | "selected-ui"
@@ -138,4 +150,7 @@ export interface ReflectionState {
   changeInstructions: any[];
 
   loading?: boolean;
+
+  /* UI DROPDOWNS */
+  designStageDropdown?: boolean;
 }

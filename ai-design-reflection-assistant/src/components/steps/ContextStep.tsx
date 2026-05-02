@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Check, AlertTriangle } from "lucide-react";
+import { Check, AlertTriangle, ChevronDown } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useReflection } from "../../features/reflection/state/ReflectionContext";
 import type {
@@ -9,18 +9,22 @@ import type {
 } from "../../features/reflection/types";
 
 /* -----------------------------
-   DESIGN STAGES
+   DESIGN STAGES (EXPANDED)
 ----------------------------- */
 
 const DESIGN_STAGES: { value: DesignStage; label: string }[] = [
-  { value: "research", label: "Research" },
-  { value: "wireframe", label: "Wireframe" },
-  { value: "early-concept", label: "Early concept" },
-  { value: "high-fidelity", label: "High fidelity" },
+  { value: "problem-definition", label: "Problem definition" },
+  { value: "user-flows", label: "User flows" },
+  { value: "low-fidelity", label: "Low‑fidelity sketches" },
+  { value: "wireframe", label: "Wireframes" },
+  { value: "mid-fidelity", label: "Mid‑fidelity mockups" },
+  { value: "high-fidelity", label: "High‑fidelity design" },
+  { value: "prototype", label: "Interactive prototype" },
+  { value: "usability-testing", label: "Usability testing" },
 ];
 
 /* -----------------------------
-   CONTEXT CONFIG (FIXED)
+   CONTEXT BY TASK MODE
 ----------------------------- */
 
 const CONTEXT_BY_MODE: Record<
@@ -69,7 +73,22 @@ const CONTEXT_BY_MODE: Record<
 };
 
 /* -----------------------------
-   DYNAMIC LABELS (FIXED)
+   CONTEXT BY DESIGN STAGE
+----------------------------- */
+
+const CONTEXT_BY_STAGE: Record<DesignStage, ContextItem[]> = {
+  "problem-definition": ["user-research", "internal-docs"],
+  "user-flows": ["selected-ui", "internal-docs"],
+  "low-fidelity": ["selected-ui", "button-labels"],
+  "wireframe": ["selected-ui", "button-labels", "input-fields"],
+  "mid-fidelity": ["selected-ui", "button-labels", "input-fields"],
+  "high-fidelity": ["selected-ui", "button-labels", "input-fields"],
+  "prototype": ["selected-ui", "button-labels", "input-fields"],
+  "usability-testing": ["selected-ui", "user-research"],
+};
+
+/* -----------------------------
+   LABELS
 ----------------------------- */
 
 const CONTEXT_LABEL_BY_MODE: Record<TaskMode, string> = {
@@ -151,16 +170,20 @@ const CheckboxChip = ({
 export function ContextStep() {
   const { state, dispatch } = useReflection();
 
-  const dynamicContextOptions =
+  const stage = state.designStage[0] as DesignStage | undefined;
+
+  const baseContextOptions =
     CONTEXT_BY_MODE[state.taskMode]?.items || [];
+
+  const dynamicContextOptions = stage
+    ? baseContextOptions.filter((item) =>
+        CONTEXT_BY_STAGE[stage]?.includes(item.value)
+      )
+    : baseContextOptions;
 
   const contextLabel =
     CONTEXT_LABEL_BY_MODE[state.taskMode] ||
     "What information should the AI use?";
-
-  const toggleStage = (value: DesignStage) => {
-    dispatch({ type: "TOGGLE_STAGE", value });
-  };
 
   const toggleContext = (value: ContextItem) => {
     dispatch({ type: "TOGGLE_CONTEXT", value });
@@ -178,7 +201,6 @@ export function ContextStep() {
       transition={{ duration: 0.28, ease: "easeOut" }}
       className="flex-1 overflow-y-auto panel-scroll p-5 space-y-6"
     >
-      {/* HEADER */}
       <div className="space-y-1">
         <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-[0.16em]">
           STEP 2 OF 6
@@ -193,7 +215,6 @@ export function ContextStep() {
         </p>
       </div>
 
-      {/* SELECTED ELEMENT */}
       <Field label="What part of the design are you working on?">
         <input
           value={state.selectedElement}
@@ -209,7 +230,6 @@ export function ContextStep() {
         />
       </Field>
 
-      {/* PRODUCT CONTEXT */}
       <Field label="What is this product or feature?">
         <input
           value={state.productContext}
@@ -225,24 +245,62 @@ export function ContextStep() {
         />
       </Field>
 
-      {/* DESIGN STAGE */}
       <Field
         label="What stage are you in?"
         helper="Select the stage that best matches your current work."
       >
-        <div className="grid grid-cols-2 gap-2">
-          {DESIGN_STAGES.map((stage) => (
-            <CheckboxChip
-              key={stage.value}
-              label={stage.label}
-              checked={state.designStage.includes(stage.value)}
-              onToggle={() => toggleStage(stage.value)}
-            />
-          ))}
+        <div className="relative">
+          <button
+            onClick={() =>
+              dispatch({
+                type: "TOGGLE_DROPDOWN",
+                field: "designStageDropdown",
+              })
+            }
+            className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border text-xs bg-card"
+          >
+            <span className="text-foreground">
+              {state.designStage.length === 0
+                ? "Select stage..."
+                : DESIGN_STAGES.find(
+                    (s) => s.value === state.designStage[0]
+                  )?.label}
+            </span>
+            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+          </button>
+
+          {state.designStageDropdown && (
+            <div className="absolute z-10 mt-1 w-full bg-card border border-border rounded-lg shadow-lg p-1">
+              {DESIGN_STAGES.map((stage) => (
+                <button
+                  key={stage.value}
+                  onClick={() => {
+                    dispatch({
+                      type: "SET_FIELD",
+                      field: "designStage",
+                      value: [stage.value],
+                    });
+                    dispatch({
+                      type: "SET_FIELD",
+                      field: "designStageDropdown",
+                      value: false,
+                    });
+                  }}
+                  className={cn(
+                    "w-full text-left px-3 py-2 text-xs rounded-md transition-colors",
+                    state.designStage.includes(stage.value)
+                      ? "bg-primary/10 text-primary"
+                      : "hover:bg-muted/40"
+                  )}
+                >
+                  {stage.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </Field>
 
-      {/* DYNAMIC CONTEXT */}
       <Field
         label={contextLabel}
         helper="This simulates what the AI has access to."
@@ -260,7 +318,6 @@ export function ContextStep() {
         </div>
       </Field>
 
-      {/* EXTRA NOTES */}
       <Field label="Anything else the AI should know?">
         <textarea
           value={state.designerNotes}
@@ -276,7 +333,6 @@ export function ContextStep() {
         />
       </Field>
 
-      {/* ACTIONS */}
       <div className="flex gap-2 pt-2">
         <button
           onClick={() => dispatch({ type: "SET_STEP", step: 0 })}

@@ -31,7 +31,21 @@ export function reflectionReducer(
         currentStep: Math.max(state.currentStep - 1, 0),
       };
 
-    /* DESIGN STAGE + CONTEXT */
+    /* -----------------------------
+       DROPDOWNS
+    ----------------------------- */
+
+    case "TOGGLE_DROPDOWN": {
+      const field = action.field as keyof ReflectionState;
+      return {
+        ...state,
+        [field]: !state[field],
+      };
+    }
+
+    /* -----------------------------
+       DESIGN STAGE + CONTEXT
+    ----------------------------- */
 
     case "TOGGLE_STAGE": {
       const value: DesignStage = action.value;
@@ -57,7 +71,9 @@ export function reflectionReducer(
       };
     }
 
-    /* CRITIQUE CATEGORY FILTERING */
+    /* -----------------------------
+       CRITIQUE CATEGORY FILTERING
+    ----------------------------- */
 
     case "TOGGLE_CRITIQUE_CATEGORY": {
       const value: CritiqueCategory = action.value;
@@ -71,7 +87,9 @@ export function reflectionReducer(
       };
     }
 
-    /* OPTION SELECTION + REFLECTION RESULT */
+    /* -----------------------------
+       OPTION SELECTION + REFLECTION RESULT
+    ----------------------------- */
 
     case "SELECT_OPTION":
       return { ...state, selectedOptionId: action.value };
@@ -100,14 +118,15 @@ export function reflectionReducer(
           state.changeInstructions,
       };
 
-    /* ⭐ CRITICAL FIX: independent improvements injection */
     case "SET_IMPROVEMENTS":
       return {
         ...state,
         improvements: action.improvements || [],
       };
 
-    /* OPTION REFINEMENT FLOW */
+    /* -----------------------------
+       OPTION REFINEMENT FLOW
+    ----------------------------- */
 
     case "OPEN_REFINEMENT_PAGE":
       return {
@@ -145,7 +164,7 @@ export function reflectionReducer(
 
       const refined: OptionCard = {
         ...action.option,
-        id: base.id, // keep identity stable
+        id: base.id,
       };
 
       return {
@@ -160,7 +179,9 @@ export function reflectionReducer(
       };
     }
 
-    /* CRITIQUE CHAT FLOW */
+    /* -----------------------------
+       CRITIQUE CHAT FLOW
+    ----------------------------- */
 
     case "OPEN_CRITIQUE_CHAT":
       return {
@@ -192,7 +213,9 @@ export function reflectionReducer(
         refinedCritiqueSuggestion: action.value,
       };
 
-    /* IMPROVEMENTS + APPLY STEP */
+    /* -----------------------------
+       IMPROVEMENTS + APPLY STEP
+    ----------------------------- */
 
     case "ADD_IMPROVEMENT":
       if (!action.text) return state;

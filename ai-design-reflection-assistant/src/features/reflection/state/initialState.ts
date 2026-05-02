@@ -3,7 +3,6 @@ import type { ReflectionState } from "../types";
 export const initialReflectionState: ReflectionState = {
   currentStep: 0,
 
-  // ✅ UPDATED: must match new TaskMode
   taskMode: "design",
 
   goal: "",
@@ -50,4 +49,7 @@ export const initialReflectionState: ReflectionState = {
   changeInstructions: [],
 
   loading: false,
+
+  /* UI DROPDOWNS */
+  designStageDropdown: false,
 };

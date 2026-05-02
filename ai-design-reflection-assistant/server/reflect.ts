@@ -5,24 +5,39 @@ import crypto from "crypto";
 const router = Router();
 
 /* -------------------------------------------------------
-   DESIGN STAGE BEHAVIOR
+   DESIGN STAGE BEHAVIOR — UPDATED FOR ALL NEW STAGES
 -------------------------------------------------------- */
 const buildDesignStageBehavior = (designStage: string[]) => `
 Design stage behavior rules:
 
-If stage includes "research":
-- Focus on user needs, motivations, pain points, assumptions.
+If stage includes "problem-definition":
+- Focus on clarifying the problem, constraints, user needs, and assumptions.
 - Avoid UI-level feedback.
 
-If stage includes "wireframe":
-- Focus on structure, flow, and usability.
-- Avoid visual polish feedback.
+If stage includes "user-flows":
+- Focus on flow logic, task completion, friction points, and missing steps.
+- Avoid visual or layout feedback.
 
-If stage includes "early-concept":
-- Focus on ideas, directions, and tradeoffs.
+If stage includes "low-fidelity":
+- Focus on structure, layout intent, and conceptual clarity.
+- Avoid detailed UI polish.
+
+If stage includes "wireframe":
+- Focus on hierarchy, navigation, clarity, and usability.
+- Avoid visual styling feedback.
+
+If stage includes "mid-fidelity":
+- Focus on layout refinement, spacing, clarity, and interaction patterns.
+- Light visual feedback allowed.
 
 If stage includes "high-fidelity":
-- Focus on UI details like spacing, hierarchy, accessibility.
+- Focus on visual polish, spacing, accessibility, hierarchy, and consistency.
+
+If stage includes "prototype":
+- Focus on interaction flow, transitions, affordances, and user expectations.
+
+If stage includes "usability-testing":
+- Focus on identifying usability risks, confusion points, and testable hypotheses.
 
 Selected design stage:
 ${designStage.join(", ")}
@@ -205,7 +220,7 @@ Context: ${contextSelection.join(", ")}
 });
 
 /* -------------------------------------------------------
-   ⭐ IMPROVEMENTS (FULL FIX — NO OPTION REQUIRED)
+   IMPROVEMENTS
 -------------------------------------------------------- */
 router.post("/improvements", async (req, res) => {
   try {
@@ -247,6 +262,8 @@ Rules:
 - If no option is selected, generate general UX improvements
 - 5–10 improvements
 - Focus on usability, clarity, accessibility, flow
+
+${buildDesignStageBehavior(designStage)}
 
 Selected option:
 ${safeOption}
