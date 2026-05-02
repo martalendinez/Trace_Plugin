@@ -44,7 +44,7 @@ ${designStage.join(", ")}
 `;
 
 /* -------------------------------------------------------
-   MAIN REFLECTION
+   MAIN REFLECTION  ⭐ includes anythingElse
 -------------------------------------------------------- */
 router.post("/", async (req, res) => {
   try {
@@ -58,6 +58,7 @@ router.post("/", async (req, res) => {
       contextSelection = [],
       selectedOption,
       activeCritiqueCategories = [],
+      anythingElse = "",
     } = req.body;
 
     const categories =
@@ -82,6 +83,9 @@ Goal: ${goal}
 Audience: ${audience}
 Product context: ${productContext}
 Context: ${contextSelection.join(", ")}
+
+Additional considerations from the user:
+${anythingElse || "None"}
 
 Return:
 
@@ -148,7 +152,7 @@ Return:
 });
 
 /* -------------------------------------------------------
-   OPTIONS
+   OPTIONS  ⭐ does NOT include anythingElse
 -------------------------------------------------------- */
 router.post("/options", async (req, res) => {
   try {
@@ -220,7 +224,7 @@ Context: ${contextSelection.join(", ")}
 });
 
 /* -------------------------------------------------------
-   IMPROVEMENTS
+   IMPROVEMENTS  ⭐ does NOT include anythingElse
 -------------------------------------------------------- */
 router.post("/improvements", async (req, res) => {
   try {
