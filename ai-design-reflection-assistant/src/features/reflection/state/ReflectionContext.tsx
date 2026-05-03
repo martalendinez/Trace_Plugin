@@ -29,7 +29,9 @@ export function ReflectionProvider({ children }: PropsWithChildren) {
 
   // ⭐ Wrapped dispatch with async logic
   const dispatch: Dispatch<ReflectionAction> = async (action) => {
-    // Intercept NEXT_STEP → Critique (step 2 → 3)
+    /* -------------------------------------------------------
+       STEP 2 → STEP 3 (Generate Critiques)
+    -------------------------------------------------------- */
     if (action.type === "NEXT_STEP" && state.currentStep === 2) {
       baseDispatch({ type: "SET_LOADING", loading: true });
 
@@ -46,6 +48,7 @@ export function ReflectionProvider({ children }: PropsWithChildren) {
           contextSelection: state.contextSelection,
           selectedOption,
           activeCritiqueCategories: state.activeCritiqueCategories,
+          anythingElse: state.anythingElse,
         };
 
         const result = await callReflectApi(payload);
@@ -65,7 +68,65 @@ export function ReflectionProvider({ children }: PropsWithChildren) {
       return;
     }
 
-    // Normal dispatch for all other actions
+    /* -------------------------------------------------------
+       STEP 3 → STEP 4 (Generate Improvements ALWAYS)
+    -------------------------------------------------------- */
+    if (action.type === "NEXT_STEP" && state.currentStep === 3) {
+      baseDispatch({ type: "SET_LOADING", loading: true });
+
+      try {
+        const selectedOption = state.generatedOptions.find(
+          (o) => o.id === state.selectedOptionId
+        );
+
+        const res = await fetch(
+          "http://localhost:3001/api/reflect/improvements",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              goal: state.goal,
+              audience: state.audience,
+              productContext: state.productContext,
+              designStage: state.designStage,
+              contextSelection: state.contextSelection,
+              selectedOption,
+            }),
+          }
+        );
+
+        const text = await res.text();
+        const data = text ? JSON.parse(text) : { improvements: [] };
+
+        baseDispatch({
+          type: "SET_IMPROVEMENTS",
+          improvements: data.improvements || [],
+        });
+
+        baseDispatch({ type: "SET_STEP", step: 4 });
+      } catch (err) {
+        console.error("Improvements API error:", err);
+      } finally {
+        baseDispatch({ type: "SET_LOADING", loading: false });
+      }
+
+      return;
+    }
+
+    /* -------------------------------------------------------
+       DEFAULT NEXT_STEP (no async)
+    -------------------------------------------------------- */
+    if (action.type === "NEXT_STEP") {
+      baseDispatch({
+        type: "SET_STEP",
+        step: state.currentStep + 1,
+      });
+      return;
+    }
+
+    /* -------------------------------------------------------
+       DEFAULT DISPATCH
+    -------------------------------------------------------- */
     baseDispatch(action);
   };
 

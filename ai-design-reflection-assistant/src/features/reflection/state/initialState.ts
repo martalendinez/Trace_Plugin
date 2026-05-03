@@ -52,4 +52,7 @@ export const initialReflectionState: ReflectionState = {
 
   /* UI DROPDOWNS */
   designStageDropdown: false,
+
+  /* ⭐ NEW FIELD */
+  anythingElse: "",
 };
