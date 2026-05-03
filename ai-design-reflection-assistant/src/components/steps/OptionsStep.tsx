@@ -2,14 +2,18 @@ import { motion } from "framer-motion";
 import { useReflection } from "../../features/reflection/state/ReflectionContext";
 import type { OptionCard } from "../../features/reflection/types";
 import { useEffect, useState } from "react";
+import { Eye, EyeOff } from "lucide-react"; // ⭐ Lucide icons
 
 const API = "http://localhost:3001";
 
 export function OptionsStep() {
   const { state, dispatch } = useReflection();
 
-  // ⭐ Local state for Claude-style typing animation
+  // Claude-style typing animation
   const [displayedReasoning, setDisplayedReasoning] = useState("");
+
+  // Toggle to hide/show reasoning
+  const [showReasoning, setShowReasoning] = useState(true);
 
   /* -------------------------------------------------------
      TYPING EFFECT — animates state.reasoning like Claude
@@ -58,12 +62,16 @@ export function OptionsStep() {
         type: "SET_REFLECTION_RESULT",
         payload: {
           options: data.options,
-          reasoning: data.reasoning, // ⭐ this triggers the typing animation
+          reasoning: data.reasoning,
           critiques: [],
           improvements: [],
           changeInstructions: [],
         },
       });
+
+      // Always show reasoning again when generating new options
+      setShowReasoning(true);
+
     } finally {
       dispatch({ type: "SET_LOADING", loading: false });
     }
@@ -108,17 +116,33 @@ export function OptionsStep() {
       </button>
 
       {/* -------------------------------------------------------
-         CLAUDE-STYLE TYPING REASONING
+         REASONING WITH ICON TOGGLE
       -------------------------------------------------------- */}
       {displayedReasoning && (
-        <motion.div
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-[11px] text-muted-foreground whitespace-pre-line leading-relaxed"
-        >
-          {displayedReasoning}
-          <span className="animate-pulse">▍</span>
-        </motion.div>
+        <div className="relative mt-2">
+          {/* Toggle icon */}
+          <button
+            onClick={() => setShowReasoning(!showReasoning)}
+            className="absolute right-0 top-0 p-1 opacity-70 hover:opacity-100 transition"
+          >
+            {showReasoning ? (
+              <Eye size={14} className="text-muted-foreground" />
+            ) : (
+              <EyeOff size={14} className="text-muted-foreground" />
+            )}
+          </button>
+
+          {showReasoning && (
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-[11px] text-muted-foreground whitespace-pre-line leading-relaxed pr-6"
+            >
+              {displayedReasoning}
+              <span className="animate-pulse">▍</span>
+            </motion.div>
+          )}
+        </div>
       )}
 
       {/* -------------------------------------------------------
