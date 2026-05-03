@@ -44,7 +44,7 @@ ${designStage.join(", ")}
 `;
 
 /* -------------------------------------------------------
-   MAIN REFLECTION  ⭐ includes anythingElse
+   MAIN REFLECTION includes anythingElse
 -------------------------------------------------------- */
 router.post("/", async (req, res) => {
   try {
@@ -162,7 +162,7 @@ Return:
 });
 
 /* -------------------------------------------------------
-   OPTIONS  ⭐ NOW RETURNS reasoning + options
+   OPTIONS NOW RETURNS reasoning + options
 -------------------------------------------------------- */
 router.post("/options", async (req, res) => {
   try {
