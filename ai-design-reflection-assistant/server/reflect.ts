@@ -87,6 +87,16 @@ Context: ${contextSelection.join(", ")}
 Additional considerations from the user:
 ${anythingElse || "None"}
 
+You MUST incorporate these additional considerations into:
+- your critiques
+- your concerns
+- your suggestions
+- your improvements
+- your changeInstructions
+
+If the user mentions accessibility needs (e.g., visual impairments, color blindness, cognitive load, motor limitations),
+you MUST prioritize accessibility issues and highlight them clearly.
+
 Return:
 
 {
@@ -152,7 +162,7 @@ Return:
 });
 
 /* -------------------------------------------------------
-   OPTIONS  ⭐ does NOT include anythingElse
+   OPTIONS  ⭐ NOW INCLUDES anythingElse + UX‑GOOD QUALITY
 -------------------------------------------------------- */
 router.post("/options", async (req, res) => {
   try {
@@ -164,32 +174,66 @@ router.post("/options", async (req, res) => {
       productContext,
       designStage = [],
       contextSelection = [],
+      anythingElse = "",
     } = req.body;
 
     const prompt = `
-You are a UX expert.
+You are a senior UX designer generating **high‑quality design options**.
 
-Return ONLY options JSON.
+Return STRICT JSON only.
 
 ${buildDesignStageBehavior(designStage)}
+
+You MUST generate **3–5 strong UX options**.
+Each option MUST be:
+- grounded in UX principles
+- realistic and implementable
+- clearly differentiated
+- not generic
+- not repetitive
+- not vague
+
+You MUST incorporate the user's additional considerations into the options.
+If the user mentions accessibility needs (e.g., visual impairments, color blindness, cognitive load, motor limitations),
+you MUST prioritize accessibility in:
+- the problem framing
+- the assumptions
+- the UX principles
+- the suggested changes
+
+Additional considerations from the user:
+${anythingElse || "None"}
+
+Each option MUST include:
+- id
+- title
+- summary
+- problem
+- assumption
+- principle
+- tradeoff
+- suggestedChanges (list of concrete UX changes)
+
+Return JSON:
 
 {
   "options": [
     {
       "id": "string",
-      "title": "title",
-      "summary": "summary",
-      "problem": "problem",
-      "assumption": "assumption",
-      "principle": "principle",
-      "tradeoff": "tradeoff",
-      "suggestedChanges": []
+      "title": "string",
+      "summary": "string",
+      "problem": "string",
+      "assumption": "string",
+      "principle": "string",
+      "tradeoff": "string",
+      "suggestedChanges": ["string"]
     }
   ]
 }
 
 Goal: ${goal}
 Audience: ${audience}
+Product context: ${productContext}
 Context: ${contextSelection.join(", ")}
 `;
 
@@ -224,7 +268,7 @@ Context: ${contextSelection.join(", ")}
 });
 
 /* -------------------------------------------------------
-   IMPROVEMENTS  ⭐ does NOT include anythingElse
+   IMPROVEMENTS  ⭐ unchanged
 -------------------------------------------------------- */
 router.post("/improvements", async (req, res) => {
   try {
