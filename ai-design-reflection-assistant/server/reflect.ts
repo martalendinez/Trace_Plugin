@@ -162,7 +162,7 @@ Return:
 });
 
 /* -------------------------------------------------------
-   OPTIONS  ⭐ NOW INCLUDES anythingElse + UX‑GOOD QUALITY
+   OPTIONS  ⭐ NOW RETURNS reasoning + options
 -------------------------------------------------------- */
 router.post("/options", async (req, res) => {
   try {
@@ -193,13 +193,10 @@ Each option MUST be:
 - not repetitive
 - not vague
 
-You MUST incorporate the user's additional considerations into the options.
-If the user mentions accessibility needs (e.g., visual impairments, color blindness, cognitive load, motor limitations),
-you MUST prioritize accessibility in:
-- the problem framing
-- the assumptions
-- the UX principles
-- the suggested changes
+You MUST also include a field called "reasoning" where you explain,
+in 2–4 sentences, how you arrived at these options.
+This MUST be high-level and user-friendly.
+Do NOT reveal chain-of-thought.
 
 Additional considerations from the user:
 ${anythingElse || "None"}
@@ -217,6 +214,7 @@ Each option MUST include:
 Return JSON:
 
 {
+  "reasoning": "string",
   "options": [
     {
       "id": "string",
@@ -250,6 +248,7 @@ Context: ${contextSelection.join(", ")}
     const data = JSON.parse(raw);
 
     return res.json({
+      reasoning: data.reasoning || "",
       options: (data.options || []).map((o: any) => ({
         id: o.id || crypto.randomUUID(),
         title: o.title || "Untitled",
@@ -268,7 +267,7 @@ Context: ${contextSelection.join(", ")}
 });
 
 /* -------------------------------------------------------
-   IMPROVEMENTS  ⭐ unchanged
+   IMPROVEMENTS (unchanged)
 -------------------------------------------------------- */
 router.post("/improvements", async (req, res) => {
   try {

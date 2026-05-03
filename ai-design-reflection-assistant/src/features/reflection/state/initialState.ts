@@ -53,6 +53,9 @@ export const initialReflectionState: ReflectionState = {
   /* UI DROPDOWNS */
   designStageDropdown: false,
 
-  /* ⭐ NEW FIELD */
+  /* ⭐ USER EXTRA CONTEXT */
   anythingElse: "",
+
+  /* ⭐ AI REASONING FOR OPTIONS */
+  reasoning: "",
 };

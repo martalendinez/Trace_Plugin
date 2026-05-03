@@ -19,11 +19,7 @@ export function reflectionReducer(
     case "SET_STEP":
       return { ...state, currentStep: action.step };
 
-    case "NEXT_STEP":
-      return {
-        ...state,
-        currentStep: Math.min(state.currentStep + 1, 5),
-      };
+    // ⭐ REMOVED NEXT_STEP — async wrapper handles it
 
     case "PREV_STEP":
       return {
@@ -96,7 +92,7 @@ export function reflectionReducer(
       return {
         ...state,
         selectedOptionId: action.value,
-        critiques: [], // clear old critiques
+        critiques: [],
       };
 
     /* -----------------------------
@@ -111,7 +107,7 @@ export function reflectionReducer(
 
     /* -----------------------------
        REFLECTION RESULT
-       (ALWAYS UPDATE CRITIQUES)
+       (OPTIONS + CRITIQUES + REASONING)
     ----------------------------- */
 
     case "SET_REFLECTION_RESULT":
@@ -137,6 +133,9 @@ export function reflectionReducer(
         changeInstructions:
           action.payload.changeInstructions ??
           state.changeInstructions,
+
+        // ⭐ NEW: AI reasoning for options
+        reasoning: action.payload.reasoning ?? state.reasoning,
       };
 
     case "SET_IMPROVEMENTS":

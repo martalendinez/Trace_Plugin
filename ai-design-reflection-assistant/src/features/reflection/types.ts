@@ -154,6 +154,9 @@ export interface ReflectionState {
   /* UI DROPDOWNS */
   designStageDropdown?: boolean;
 
-  /* ⭐ NEW FIELD — REQUIRED FOR OPTIONS + REFLECT */
+  /* ⭐ NEW FIELDS */
   anythingElse: string;
+
+  /* ⭐ AI REASONING FOR OPTIONS */
+  reasoning: string;
 }

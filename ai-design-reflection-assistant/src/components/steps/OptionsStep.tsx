@@ -1,12 +1,40 @@
 import { motion } from "framer-motion";
 import { useReflection } from "../../features/reflection/state/ReflectionContext";
 import type { OptionCard } from "../../features/reflection/types";
+import { useEffect, useState } from "react";
 
 const API = "http://localhost:3001";
 
 export function OptionsStep() {
   const { state, dispatch } = useReflection();
 
+  // ⭐ Local state for Claude-style typing animation
+  const [displayedReasoning, setDisplayedReasoning] = useState("");
+
+  /* -------------------------------------------------------
+     TYPING EFFECT — animates state.reasoning like Claude
+  -------------------------------------------------------- */
+  useEffect(() => {
+    if (!state.reasoning) return;
+
+    setDisplayedReasoning(""); // reset before typing
+
+    let i = 0;
+    const interval = setInterval(() => {
+      setDisplayedReasoning(state.reasoning.slice(0, i));
+      i++;
+
+      if (i > state.reasoning.length) {
+        clearInterval(interval);
+      }
+    }, 18); // typing speed (Claude-like)
+
+    return () => clearInterval(interval);
+  }, [state.reasoning]);
+
+  /* -------------------------------------------------------
+     GENERATE OPTIONS
+  -------------------------------------------------------- */
   const handleGenerateOptions = async () => {
     dispatch({ type: "SET_LOADING", loading: true });
 
@@ -20,6 +48,7 @@ export function OptionsStep() {
           productContext: state.productContext,
           designStage: state.designStage,
           contextSelection: state.contextSelection,
+          anythingElse: state.anythingElse,
         }),
       });
 
@@ -29,6 +58,7 @@ export function OptionsStep() {
         type: "SET_REFLECTION_RESULT",
         payload: {
           options: data.options,
+          reasoning: data.reasoning, // ⭐ this triggers the typing animation
           critiques: [],
           improvements: [],
           changeInstructions: [],
@@ -39,14 +69,17 @@ export function OptionsStep() {
     }
   };
 
+  /* -------------------------------------------------------
+     SELECT OPTION
+  -------------------------------------------------------- */
   const handleSelect = (id: string) => {
-    // 1. set selected option
     dispatch({ type: "SELECT_OPTION", value: id });
-
-    // 2. move to critique step immediately
     dispatch({ type: "NEXT_STEP" });
   };
 
+  /* -------------------------------------------------------
+     REFINE OPTION
+  -------------------------------------------------------- */
   const handleRefine = (option: OptionCard) => {
     dispatch({ type: "OPEN_REFINEMENT_PAGE", option });
   };
@@ -74,6 +107,23 @@ export function OptionsStep() {
         Generate options
       </button>
 
+      {/* -------------------------------------------------------
+         CLAUDE-STYLE TYPING REASONING
+      -------------------------------------------------------- */}
+      {displayedReasoning && (
+        <motion.div
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-[11px] text-muted-foreground whitespace-pre-line leading-relaxed"
+        >
+          {displayedReasoning}
+          <span className="animate-pulse">▍</span>
+        </motion.div>
+      )}
+
+      {/* -------------------------------------------------------
+         OPTIONS LIST
+      -------------------------------------------------------- */}
       {state.generatedOptions.length === 0 ? (
         <p className="text-xs text-muted-foreground mt-4">
           No options yet.
